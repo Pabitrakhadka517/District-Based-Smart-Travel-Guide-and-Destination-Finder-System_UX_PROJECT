@@ -5,7 +5,7 @@ import { Destination } from "../models/Destination";
 import { ok, fail } from "../utils/response";
 import { asyncHandler } from "../utils/asyncHandler";
 import { genId } from "../utils/ids";
-import { pick, qs } from "../utils/sanitize";
+import { pick, qs, sanitizeImage } from "../utils/sanitize";
 
 const CITY_FIELDS = [
   "slug", "districtId", "name", "description", "image", "coordinates",
@@ -41,12 +41,14 @@ export const listCities = asyncHandler(async (req: Request, res: Response) => {
 
 export const createCity = asyncHandler(async (req: Request, res: Response) => {
   const body = pick(req.body as Record<string, unknown>, CITY_FIELDS);
+  if (body.image !== undefined) body.image = sanitizeImage(body.image);
   const city = await City.create({ ...body, id: (body.id as string) ?? genId("c") });
   ok(res, city, 201);
 });
 
 export const updateCity = asyncHandler(async (req: Request, res: Response) => {
   const body = pick(req.body as Record<string, unknown>, CITY_FIELDS);
+  if (body.image !== undefined) body.image = sanitizeImage(body.image);
   const city = await City.findOneAndUpdate(
     { id: req.params.id },
     { $set: body },

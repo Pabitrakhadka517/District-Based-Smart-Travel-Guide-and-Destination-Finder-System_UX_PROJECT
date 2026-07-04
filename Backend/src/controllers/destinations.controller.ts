@@ -5,7 +5,8 @@ import { Attraction } from "../models/Attraction";
 import { ok, fail } from "../utils/response";
 import { asyncHandler } from "../utils/asyncHandler";
 import { genId } from "../utils/ids";
-import { pick, qs } from "../utils/sanitize";
+import { pick, qs, sanitizeImage, sanitizeGallery } from "../utils/sanitize";
+import { getWeatherInsight } from "../services/weather";
 
 const DESTINATION_FIELDS = [
   "slug", "cityId", "districtId", "name", "tagline", "description", "category",
@@ -64,50 +65,8 @@ export const getDestination = asyncHandler(async (req: Request, res: Response) =
 
 // ─── Weather Insight ──────────────────────────────────────────────────────────
 
-type WmoCondition = "Sunny" | "Clear" | "Cloudy" | "Rain" | "Snow";
-type VisitAdvice  = "Go now" | "Good time" | "Off-season" | "Avoid";
-
-function wmoCondition(code: number): WmoCondition {
-  if (code === 0)           return "Sunny";
-  if (code <= 2)            return "Clear";
-  if (code <= 48)           return "Cloudy";
-  if (code <= 67)           return "Rain";
-  if (code <= 77)           return "Snow";
-  if (code <= 82)           return "Rain";
-  if (code <= 86)           return "Snow";
-  return "Rain";
-}
-
-const SEASON_MONTHS: Record<string, number[]> = {
-  Spring: [2, 3, 4],
-  Summer: [5, 6, 7],
-  Autumn: [8, 9, 10],
-  Winter: [11, 0, 1],
-};
-
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
-function currentSeason(): string {
-  const m = new Date().getMonth();
-  for (const [season, months] of Object.entries(SEASON_MONTHS)) {
-    if (months.includes(m)) return season;
-  }
-  return "Spring";
-}
-
-function bestMonthsFromSeasons(seasons: string[]): string[] {
-  const indices = new Set<number>();
-  for (const s of seasons) {
-    for (const m of SEASON_MONTHS[s] ?? []) indices.add(m);
-  }
-  return [...indices].sort((a, b) => a - b).map((i) => MONTH_NAMES[i]);
-}
-
 // GET /api/destinations/:slug/weather-insight
-export const getWeatherInsight = asyncHandler(async (req: Request, res: Response) => {
+export const getDestinationWeatherInsight = asyncHandler(async (req: Request, res: Response) => {
   const destination = await Destination.findOne({ slug: req.params.slug })
     .select("coordinates bestTimeToVisit name");
   if (!destination) return fail(res, "Destination not found", 404);
@@ -115,65 +74,24 @@ export const getWeatherInsight = asyncHandler(async (req: Request, res: Response
   const { lat, lng } = destination.coordinates as { lat: number; lng: number };
   const bestTimeToVisit = (destination.bestTimeToVisit ?? []) as string[];
 
-  let condition: WmoCondition = "Clear";
-  let currentTemp = 0;
-
-  try {
-    const url =
-      `https://api.open-meteo.com/v1/forecast` +
-      `?latitude=${lat}&longitude=${lng}` +
-      `&current_weather=true&timezone=Asia%2FKathmandu`;
-    const weatherRes = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    if (weatherRes.ok) {
-      const weatherJson = await weatherRes.json() as {
-        current_weather: { temperature: number; weathercode: number };
-      };
-      condition  = wmoCondition(weatherJson.current_weather.weathercode);
-      currentTemp = Math.round(weatherJson.current_weather.temperature);
-    }
-  } catch {
-    // Weather API unavailable — still return season-based advice
-  }
-
-  const season        = currentSeason();
-  const isIdealSeason = bestTimeToVisit.includes(season);
-  const isWet         = condition === "Rain" || condition === "Snow";
-
-  let visitAdvice: VisitAdvice;
-  let message: string;
-
-  if (isWet && !isIdealSeason) {
-    visitAdvice = "Avoid";
-    message     = "Heavy rain or snow expected and this is off-peak season. Consider rescheduling.";
-  } else if (isWet) {
-    visitAdvice = "Good time";
-    message     = "Peak season despite current rain — trails are open but pack waterproofs.";
-  } else if (isIdealSeason) {
-    visitAdvice = "Go now";
-    message     = `${season} is one of the best times to visit. Clear skies and comfortable temperatures.`;
-  } else if (condition === "Sunny" || condition === "Clear") {
-    visitAdvice = "Good time";
-    message     = "Conditions are currently clear. Not peak season, but pleasant for exploration.";
-  } else {
-    visitAdvice = "Off-season";
-    message     = "Off-peak season with overcast skies. Expect fewer crowds and lower prices.";
-  }
-
-  const bestMonths = bestMonthsFromSeasons(bestTimeToVisit);
-
-  ok(res, { condition, currentTemp, isIdealSeason, visitAdvice, message, bestMonths });
+  const insight = await getWeatherInsight(lat, lng, bestTimeToVisit);
+  ok(res, insight);
 });
 
 // --- Admin CRUD ---
 
 export const createDestination = asyncHandler(async (req: Request, res: Response) => {
   const body = pick(req.body as Record<string, unknown>, DESTINATION_FIELDS);
+  if (body.heroImage !== undefined) body.heroImage = sanitizeImage(body.heroImage);
+  if (body.gallery !== undefined) body.gallery = sanitizeGallery(body.gallery);
   const destination = await Destination.create({ ...body, id: (body.id as string) ?? genId("p") });
   ok(res, destination, 201);
 });
 
 export const updateDestination = asyncHandler(async (req: Request, res: Response) => {
   const body = pick(req.body as Record<string, unknown>, DESTINATION_FIELDS);
+  if (body.heroImage !== undefined) body.heroImage = sanitizeImage(body.heroImage);
+  if (body.gallery !== undefined) body.gallery = sanitizeGallery(body.gallery);
 
   // Slug uniqueness: if slug is changing, ensure no other document uses it
   if (body.slug) {

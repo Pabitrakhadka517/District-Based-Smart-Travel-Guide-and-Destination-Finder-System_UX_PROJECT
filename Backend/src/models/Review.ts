@@ -1,6 +1,6 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
 import type { IReview } from "./types";
-import { baseSchemaOptions } from "./shared";
+import { baseSchemaOptions, imageSchema } from "./shared";
 
 const reviewSchema = new Schema(
   {
@@ -10,14 +10,17 @@ const reviewSchema = new Schema(
     // Sparse so legacy seeded reviews without this field are unaffected.
     userId:  { type: String, index: true, sparse: true },
     author:  { type: String, default: "Anonymous" },
-    avatar:  { type: String, default: "https://i.pravatar.cc/150?img=3" },
+    avatar:  {
+      type: imageSchema,
+      default: () => ({ url: "https://i.pravatar.cc/150?img=3", publicId: null, alt: "Anonymous traveler" })
+    },
     rating:  { type: Number, default: 5, min: 1, max: 5 },
     title:   { type: String, default: "" },
     body:    { type: String, default: "" },
     date:    { type: String, required: true },
     helpful:          { type: Number, default: 0 },
     status:           { type: String, enum: ["approved", "pending", "rejected"], default: "pending", index: true },
-    photos:           { type: [String], default: [] },
+    photos:           { type: [imageSchema], default: [] },
     verifiedTraveler: { type: Boolean, default: false }
   },
   baseSchemaOptions

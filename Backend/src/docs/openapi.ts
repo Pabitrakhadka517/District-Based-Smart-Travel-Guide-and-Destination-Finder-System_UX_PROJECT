@@ -210,12 +210,12 @@ export const openapiSpec = {
 
       BudgetEstimate: {
         type: "object",
-        description: "Per-day cost ranges in USD",
+        description: "Per-day cost ranges in NPR (Nepali Rupees)",
         properties: {
-          budget:   { type: "number", example: 15  },
-          midRange: { type: "number", example: 45  },
-          luxury:   { type: "number", example: 120 },
-          currency: { type: "string", example: "USD" }
+          budget:   { type: "number", example: 2000  },
+          midRange: { type: "number", example: 6000  },
+          luxury:   { type: "number", example: 16000 },
+          currency: { type: "string", example: "NPR" }
         }
       },
 

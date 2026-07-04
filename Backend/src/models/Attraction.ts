@@ -1,5 +1,5 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
-import { baseSchemaOptions, coordinatesSchema } from "./shared";
+import { baseSchemaOptions, coordinatesSchema, imageSchema, emptyImage } from "./shared";
 
 const entryFeeSchema = new Schema(
   {
@@ -31,8 +31,8 @@ const attractionSchema = new Schema(
     tagline: { type: String, default: "" },
     description: { type: String, default: "" },
     history: { type: String, default: "" },
-    heroImage: { type: String, default: "" },
-    gallery: { type: [String], default: [] },
+    heroImage: { type: imageSchema, default: emptyImage },
+    gallery: { type: [imageSchema], default: [] },
     coordinates: { type: coordinatesSchema, required: true },
     rating: { type: Number, default: 0 },
     reviewCount: { type: Number, default: 0 },

@@ -9,6 +9,8 @@ import { signToken } from "../middleware/auth";
 import { genId, today } from "../utils/ids";
 import { sendPasswordResetEmail } from "../services/email.service";
 import { env } from "../config/env";
+import { sanitizeImage } from "../utils/sanitize";
+import { deleteImage } from "../services/cloudinary.service";
 
 const REFRESH_COOKIE    = "nepalyatra_rt";
 const BCRYPT_ROUNDS     = 12;
@@ -249,24 +251,33 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
 // PATCH /api/auth/profile   { name?, avatar? }
 export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
   const { name, avatar } = req.body ?? {};
-  const updates: Record<string, string> = {};
+  const updates: Record<string, unknown> = {};
 
   if (name !== undefined) {
     if (String(name).trim().length < 2) return fail(res, "Name must be at least 2 characters", 400);
     updates.name = String(name).trim();
   }
+
+  let previousAvatarPublicId: string | null = null;
   if (avatar !== undefined) {
-    const avatarStr = String(avatar).trim();
-    if (avatarStr && !URL_RE.test(avatarStr)) {
-      return fail(res, "avatar must be a valid http/https URL", 400);
+    const sanitized = sanitizeImage(avatar);
+    if (!sanitized || !URL_RE.test(sanitized.url)) {
+      return fail(res, "avatar must be a valid image object with an http/https url", 400);
     }
-    updates.avatar = avatarStr;
+    const existing = await User.findOne({ id: req.auth!.sub }).select("avatar");
+    previousAvatarPublicId = existing?.avatar?.publicId ?? null;
+    updates.avatar = sanitized;
   }
 
   if (Object.keys(updates).length === 0) return fail(res, "No fields to update", 400);
 
   const user = await User.findOneAndUpdate({ id: req.auth!.sub }, updates, { new: true });
   if (!user) return fail(res, "User not found", 404);
+
+  // Best-effort cleanup of the old Cloudinary asset — never fails the request
+  if (previousAvatarPublicId && previousAvatarPublicId !== (updates.avatar as { publicId: string | null })?.publicId) {
+    void deleteImage(previousAvatarPublicId);
+  }
 
   await audit(req.auth!.sub, "profile_update", req, { fields: Object.keys(updates) });
   ok(res, user);

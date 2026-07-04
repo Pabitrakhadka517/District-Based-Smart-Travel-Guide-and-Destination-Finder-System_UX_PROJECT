@@ -3,10 +3,11 @@ import { Festival } from "../models/Festival";
 import { ok, fail } from "../utils/response";
 import { asyncHandler } from "../utils/asyncHandler";
 import { genId } from "../utils/ids";
-import { pick } from "../utils/sanitize";
+import { pick, sanitizeImage } from "../utils/sanitize";
 
 const FESTIVAL_FIELDS = [
-  "slug", "name", "month", "season", "type", "description", "image", "where", "duration"
+  "slug", "name", "month", "season", "type", "description", "image", "where",
+  "districtId", "isNationwide", "duration", "coordinates"
 ];
 
 // GET /api/festivals
@@ -26,12 +27,14 @@ export const getFestival = asyncHandler(async (req: Request, res: Response) => {
 
 export const createFestival = asyncHandler(async (req: Request, res: Response) => {
   const body = pick(req.body as Record<string, unknown>, FESTIVAL_FIELDS);
+  if (body.image !== undefined) body.image = sanitizeImage(body.image);
   const festival = await Festival.create({ ...body, id: (body.id as string) ?? genId("f") });
   ok(res, festival, 201);
 });
 
 export const updateFestival = asyncHandler(async (req: Request, res: Response) => {
   const body = pick(req.body as Record<string, unknown>, FESTIVAL_FIELDS);
+  if (body.image !== undefined) body.image = sanitizeImage(body.image);
   const festival = await Festival.findOneAndUpdate(
     { id: req.params.id },
     { $set: body },

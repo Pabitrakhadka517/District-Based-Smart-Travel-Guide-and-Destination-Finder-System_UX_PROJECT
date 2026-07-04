@@ -1,6 +1,7 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { requireAuth, requireAdmin } from "../middleware/auth";
+import { uploadSingle, uploadGallery } from "../middleware/upload";
 
 import * as districts    from "../controllers/districts.controller";
 import * as cities       from "../controllers/cities.controller";
@@ -17,6 +18,7 @@ import * as wishlist     from "../controllers/wishlist.controller";
 import * as stats        from "../controllers/stats.controller";
 import * as attractions  from "../controllers/attractions.controller";
 import * as recs        from "../controllers/recommendations.controller";
+import * as upload       from "../controllers/upload.controller";
 
 const router = Router();
 
@@ -50,7 +52,7 @@ router.get("/attractions",               publicLimiter, attractions.listAttracti
 router.get("/attractions/:slug",         publicLimiter, attractions.getAttraction);
 
 router.get("/destinations",                          publicLimiter, destinations.listDestinations);
-router.get("/destinations/:slug/weather-insight",    publicLimiter, destinations.getWeatherInsight);
+router.get("/destinations/:slug/weather-insight",    publicLimiter, destinations.getDestinationWeatherInsight);
 router.get("/destinations/:slug",                    publicLimiter, destinations.getDestination);
 
 router.get("/treks",                     publicLimiter, treks.listTreks);
@@ -93,6 +95,20 @@ router.delete("/planner/:id", requireAuth, planner.deleteTrip);
 router.get(   "/wishlist",                    requireAuth, wishlist.getWishlist);
 router.post(  "/wishlist",                    requireAuth, wishlist.addToWishlist);
 router.delete("/wishlist/:destinationId",     requireAuth, wishlist.removeFromWishlist);
+
+/* ------------------------------ Uploads ----------------------------------- */
+// Rate-limited to slow down abuse of the (relatively expensive) Cloudinary upload path
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: "Too many uploads. Please try again in 15 minutes." }
+});
+
+router.post(  "/upload/image",   requireAuth, uploadLimiter, uploadSingle,  upload.uploadSingleImage);
+router.post(  "/upload/gallery", requireAuth, uploadLimiter, uploadGallery, upload.uploadGalleryImages);
+router.delete("/upload/image",   requireAdmin,               upload.deleteUploadedImage);
 
 /* ------------------------------- Admin ----------------------------------- */
 router.post(  "/districts",     requireAdmin, districts.createDistrict);

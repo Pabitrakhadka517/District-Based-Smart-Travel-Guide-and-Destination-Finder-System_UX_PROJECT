@@ -8,9 +8,19 @@ export type Difficulty = "Easy" | "Moderate" | "Challenging" | "Strenuous";
 
 export interface ICoordinates { lat: number; lng: number; }
 
+/** Structured image metadata — backs every image field across the models below. */
+export interface IImage {
+  url: string;
+  publicId: string | null;
+  alt: string;
+  width?: number;
+  height?: number;
+  blurDataUrl?: string;
+}
+
 export interface IDistrict {
   id: string; slug: string; name: string; province: string;
-  description: string; heroImage: string; coordinates: ICoordinates;
+  description: string; heroImage: IImage; coordinates: ICoordinates;
   cityCount: number; destinationCount: number; popularFor: string[]; rating: number;
   // Added with the attractions feature
   bestSeason: string; attractionCount: number;
@@ -18,7 +28,7 @@ export interface IDistrict {
 
 export interface ICity {
   id: string; slug: string; districtId: string; name: string;
-  description: string; image: string; coordinates: ICoordinates;
+  description: string; image: IImage; coordinates: ICoordinates;
   categories: string[]; rating: number; destinationCount: number; altitude: number;
 }
 
@@ -29,7 +39,7 @@ export interface IRestaurant { name: string; cuisine: string; priceRange: string
 export interface IDestination {
   id: string; slug: string; cityId: string; districtId: string;
   name: string; tagline: string; description: string; category: Category;
-  tags: string[]; heroImage: string; gallery: string[]; coordinates: ICoordinates;
+  tags: string[]; heroImage: IImage; gallery: IImage[]; coordinates: ICoordinates;
   rating: number; reviewCount: number; bestTimeToVisit: string[]; budget: IBudget;
   attractions: IAttraction[]; activities: string[]; restaurants: IRestaurant[];
   localFoods: string[]; travelTips: string[]; pros: string[]; cons: string[];
@@ -41,33 +51,42 @@ export interface IDestination {
 export interface IReview {
   id: string; destinationId: string;
   userId?: string;        // authenticated user who submitted the review
-  author: string; avatar: string;
+  author: string; avatar: IImage;
   rating: number; title: string; body: string; date: string;
   helpful: number; status: "approved" | "pending" | "rejected";
-  photos?: string[];
+  photos?: IImage[];
   verifiedTraveler?: boolean;
 }
 
 export interface ITrekDay { day: number; title: string; detail: string; altitude: number; hours: string; }
 export interface ITrek {
   id: string; slug: string; name: string; region: string; tagline: string;
-  description: string; heroImage: string; gallery: string[]; difficulty: Difficulty;
+  description: string; heroImage: IImage; gallery: IImage[]; difficulty: Difficulty;
   durationDays: number; maxAltitude: number; distanceKm: number; bestSeasons: string[];
-  permits: string[]; highlights: string[]; itinerary: ITrekDay[];
+  permits: string[]; highlights: string[]; itinerary: ITrekDay[]; coordinates: ICoordinates;
   rating: number; priceFrom: number; featured: boolean;
+  // Districts this trek passes through (a trek can span multiple districts)
+  districtIds: string[];
 }
 
 export interface IFestival {
   id: string; slug: string; name: string; month: string; season: Season;
   type: "Religious" | "Cultural" | "Harvest" | "National";
-  description: string; image: string; where: string; duration: string;
+  description: string; image: IImage; where: string; duration: string;
+  coordinates: ICoordinates;
+  // Single district this festival is local to; absent/undefined when isNationwide is true
+  districtId?: string;
+  isNationwide: boolean;
 }
 
 export interface IGuide {
   id: string; slug: string; title: string; excerpt: string;
   category: "Tips" | "Itineraries" | "Culture" | "Food" | "Trekking";
-  cover: string; author: string; authorAvatar: string; date: string;
+  cover: IImage; author: string; authorAvatar: IImage; date: string;
   readMinutes: number; tags: string[]; body: string[]; featured: boolean;
+  coordinates: ICoordinates;
+  // Optional — some guides are general tips not tied to one place
+  districtId?: string;
 }
 
 export interface IRefreshTokenEntry {
@@ -82,7 +101,7 @@ export interface IUser {
   name: string;
   email: string;
   password: string;
-  avatar: string;
+  avatar: IImage;
   role: "user" | "admin";
   joinedAt: string;
   lastLogin: string;

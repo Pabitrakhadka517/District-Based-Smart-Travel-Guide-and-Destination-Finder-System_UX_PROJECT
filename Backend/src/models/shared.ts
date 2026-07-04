@@ -34,3 +34,26 @@ export const coordinatesSchema = new Schema(
   },
   { _id: false }
 );
+
+/**
+ * Reusable image sub-schema. `publicId` is null for legacy/seeded images that
+ * were never uploaded through Cloudinary (so they're never sent to the
+ * Cloudinary destroy API by mistake).
+ */
+export const imageSchema = new Schema(
+  {
+    url: { type: String, required: true },
+    publicId: { type: String, default: null },
+    alt: { type: String, default: "" },
+    width: { type: Number },
+    height: { type: Number },
+    blurDataUrl: { type: String, default: "" }
+  },
+  { _id: false }
+);
+
+export const emptyImage = (): { url: string; publicId: null; alt: string } => ({
+  url: "",
+  publicId: null,
+  alt: ""
+});

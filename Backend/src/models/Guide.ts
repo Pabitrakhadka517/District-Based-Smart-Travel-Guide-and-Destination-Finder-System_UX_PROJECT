@@ -1,6 +1,6 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
 import type { IGuide } from "./types";
-import { baseSchemaOptions } from "./shared";
+import { baseSchemaOptions, coordinatesSchema, imageSchema, emptyImage } from "./shared";
 
 const guideSchema = new Schema(
   {
@@ -14,14 +14,16 @@ const guideSchema = new Schema(
       required: true,
       index: true
     },
-    cover: { type: String, default: "" },
+    cover: { type: imageSchema, default: emptyImage },
     author: { type: String, default: "" },
-    authorAvatar: { type: String, default: "" },
+    authorAvatar: { type: imageSchema, default: emptyImage },
     date: { type: String, default: "" },
     readMinutes: { type: Number, default: 0 },
     tags: { type: [String], default: [] },
     body: { type: [String], default: [] },
-    featured: { type: Boolean, default: false, index: true }
+    featured: { type: Boolean, default: false, index: true },
+    coordinates: { type: coordinatesSchema, required: true },
+    districtId: { type: String, index: true }
   },
   baseSchemaOptions
 );

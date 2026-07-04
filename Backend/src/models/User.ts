@@ -1,6 +1,6 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
 import type { IUser } from "./types";
-import { baseSchemaOptions } from "./shared";
+import { baseSchemaOptions, imageSchema } from "./shared";
 
 const refreshTokenSchema = new Schema(
   {
@@ -18,7 +18,10 @@ const userSchema = new Schema(
     name:     { type: String, required: true },
     email:    { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
     password: { type: String, required: true, select: false },
-    avatar:   { type: String, default: "https://i.pravatar.cc/150?img=68" },
+    avatar: {
+      type: imageSchema,
+      default: () => ({ url: "https://i.pravatar.cc/150?img=68", publicId: null, alt: "" })
+    },
     role:     { type: String, enum: ["user", "admin"], default: "user" },
     joinedAt:  { type: String, required: true },
     lastLogin: { type: String, default: "" },

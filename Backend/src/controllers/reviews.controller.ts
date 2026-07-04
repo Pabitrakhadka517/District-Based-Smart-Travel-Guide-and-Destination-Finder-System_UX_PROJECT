@@ -6,7 +6,7 @@ import { User } from "../models/User";
 import { ok, fail } from "../utils/response";
 import { asyncHandler } from "../utils/asyncHandler";
 import { genId, today } from "../utils/ids";
-import { qs } from "../utils/sanitize";
+import { qs, sanitizeGallery } from "../utils/sanitize";
 
 const VALID_STATUSES = ["approved", "pending", "rejected"] as const;
 
@@ -62,13 +62,8 @@ export const createReview = asyncHandler(async (req: Request, res: Response) => 
   // Check if the user has a trip plan that includes this destination (verified traveler)
   const hasTrip = await TripPlan.exists({ userId, destinationIds: destinationId });
 
-  // Validate photos: accept array of URL strings, max 5
-  let photos: string[] = [];
-  if (Array.isArray(body.photos)) {
-    photos = (body.photos as unknown[])
-      .filter((p): p is string => typeof p === "string" && p.trim().length > 0)
-      .slice(0, 5);
-  }
+  // Validate photos: accept array of image objects (already uploaded via /api/upload/gallery), max 5
+  const photos = sanitizeGallery(body.photos, 5);
 
   // Use the authenticated user's real name and avatar — never trust client-supplied values
   const reviewer = await User.findOne({ id: userId });
@@ -78,7 +73,7 @@ export const createReview = asyncHandler(async (req: Request, res: Response) => 
     userId,
     destinationId,
     author:           reviewer?.name   ?? "Anonymous",
-    avatar:           reviewer?.avatar ?? "https://i.pravatar.cc/150?img=3",
+    avatar:           reviewer?.avatar ?? { url: "https://i.pravatar.cc/150?img=3", publicId: null, alt: "Anonymous traveler" },
     rating,
     title:  typeof body.title === "string" ? body.title.trim().slice(0, 200)  : "",
     body:   typeof body.body  === "string" ? body.body.trim().slice(0, 5000)  : "",

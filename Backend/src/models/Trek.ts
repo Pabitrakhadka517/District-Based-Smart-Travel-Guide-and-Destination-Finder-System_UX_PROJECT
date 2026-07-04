@@ -1,6 +1,6 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
 import type { ITrek } from "./types";
-import { baseSchemaOptions } from "./shared";
+import { baseSchemaOptions, coordinatesSchema, imageSchema, emptyImage } from "./shared";
 
 const trekDaySchema = new Schema(
   {
@@ -19,10 +19,11 @@ const trekSchema = new Schema(
     slug: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true },
     region: { type: String, default: "" },
+    districtIds: { type: [String], default: [], index: true },
     tagline: { type: String, default: "" },
     description: { type: String, default: "" },
-    heroImage: { type: String, default: "" },
-    gallery: { type: [String], default: [] },
+    heroImage: { type: imageSchema, default: emptyImage },
+    gallery: { type: [imageSchema], default: [] },
     difficulty: {
       type: String,
       enum: ["Easy", "Moderate", "Challenging", "Strenuous"],
@@ -36,6 +37,7 @@ const trekSchema = new Schema(
     permits: { type: [String], default: [] },
     highlights: { type: [String], default: [] },
     itinerary: { type: [trekDaySchema], default: [] },
+    coordinates: { type: coordinatesSchema, required: true },
     rating: { type: Number, default: 0 },
     priceFrom: { type: Number, default: 0 },
     featured: { type: Boolean, default: false, index: true }

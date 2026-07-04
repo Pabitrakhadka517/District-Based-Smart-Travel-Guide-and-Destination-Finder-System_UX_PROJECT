@@ -3,11 +3,11 @@ import { Guide } from "../models/Guide";
 import { ok, fail } from "../utils/response";
 import { asyncHandler } from "../utils/asyncHandler";
 import { genId } from "../utils/ids";
-import { pick, qs } from "../utils/sanitize";
+import { pick, qs, sanitizeImage } from "../utils/sanitize";
 
 const GUIDE_FIELDS = [
-  "slug", "title", "category", "summary", "content", "image",
-  "readTime", "author", "publishedAt", "tags", "featured"
+  "slug", "title", "category", "excerpt", "body", "cover", "authorAvatar",
+  "readMinutes", "author", "date", "tags", "featured", "coordinates", "districtId"
 ];
 
 const VALID_CATEGORIES = ["culture", "trekking", "food", "nature", "adventure", "history", "travel-tips"];
@@ -41,12 +41,16 @@ export const getGuide = asyncHandler(async (req: Request, res: Response) => {
 
 export const createGuide = asyncHandler(async (req: Request, res: Response) => {
   const body = pick(req.body as Record<string, unknown>, GUIDE_FIELDS);
+  if (body.cover !== undefined) body.cover = sanitizeImage(body.cover);
+  if (body.authorAvatar !== undefined) body.authorAvatar = sanitizeImage(body.authorAvatar);
   const guide = await Guide.create({ ...body, id: (body.id as string) ?? genId("g") });
   ok(res, guide, 201);
 });
 
 export const updateGuide = asyncHandler(async (req: Request, res: Response) => {
   const body = pick(req.body as Record<string, unknown>, GUIDE_FIELDS);
+  if (body.cover !== undefined) body.cover = sanitizeImage(body.cover);
+  if (body.authorAvatar !== undefined) body.authorAvatar = sanitizeImage(body.authorAvatar);
   const guide = await Guide.findOneAndUpdate(
     { id: req.params.id },
     { $set: body },

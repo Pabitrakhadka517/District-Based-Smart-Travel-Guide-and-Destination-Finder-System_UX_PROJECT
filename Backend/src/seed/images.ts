@@ -18,6 +18,9 @@ export const PHOTO = {
   stupa1: "1605640840605-14ac1855827b",
   stupa2: "1592285896110-8d88b5b3a5d8",
   square1: "1571536802807-30451e3955d8",
+  durbarSquareKTM: "1736457093305-5c54384fc49e",
+  patanCourtyard: "1699204121879-f7d805d3bc41",
+  thamelStreet: "1580321827154-812450ccf214",
   lake1: "1526772662000-3f88f10405ff",
   lake2: "1506905925346-21bda4d32df4",
   jungle1: "1581852017103-68ac65514cf7",
@@ -48,6 +51,30 @@ export const PHOTO = {
   nepalHills:    "1599751229070-854ae5c90869",
   tanahun:       "1731339987698-a9ddbd4be744",
   tansen:        "1529733905113-027ed85d7e33",
+  // Festival-specific photos — verified CDN IDs
+  holiColors:    "1774160481361-ddc7c7c5f0eb",
+  tiharDiya:     "1605292356183-a77d0a9c9d1d",
+  dashainKite:   "1572140857887-c4324122ff1e",
 } as const;
 
 export const gallery = (...ids: string[]): string[] => ids.map((id) => img(id, 1400));
+
+export interface SeedImage {
+  url: string;
+  publicId: null;
+  alt: string;
+}
+
+/**
+ * Wraps a legacy seed URL string into the structured image shape the models
+ * now expect. `publicId` stays null — these were never uploaded through
+ * Cloudinary, so they must never be sent to Cloudinary's destroy API.
+ */
+export const toImage = (url: string, alt: string): SeedImage => ({
+  url: url ?? "",
+  publicId: null,
+  alt
+});
+
+export const toGallery = (urls: string[], alt: string): SeedImage[] =>
+  (urls ?? []).map((url, i) => toImage(url, `${alt} — photo ${i + 1}`));

@@ -3,12 +3,12 @@ import { Trek } from "../models/Trek";
 import { ok, fail } from "../utils/response";
 import { asyncHandler } from "../utils/asyncHandler";
 import { genId } from "../utils/ids";
-import { pick, qs } from "../utils/sanitize";
+import { pick, qs, sanitizeImage, sanitizeGallery } from "../utils/sanitize";
 
 const TREK_FIELDS = [
-  "slug", "name", "region", "tagline", "description", "heroImage", "gallery",
+  "slug", "name", "region", "districtIds", "tagline", "description", "heroImage", "gallery",
   "difficulty", "durationDays", "maxAltitude", "distanceKm", "bestSeasons",
-  "permits", "highlights", "itinerary", "rating", "priceFrom", "featured"
+  "permits", "highlights", "itinerary", "coordinates", "rating", "priceFrom", "featured"
 ];
 
 const VALID_DIFFICULTIES = ["Easy", "Moderate", "Challenging", "Strenuous"];
@@ -41,12 +41,16 @@ export const getTrek = asyncHandler(async (req: Request, res: Response) => {
 
 export const createTrek = asyncHandler(async (req: Request, res: Response) => {
   const body = pick(req.body as Record<string, unknown>, TREK_FIELDS);
+  if (body.heroImage !== undefined) body.heroImage = sanitizeImage(body.heroImage);
+  if (body.gallery !== undefined) body.gallery = sanitizeGallery(body.gallery);
   const trek = await Trek.create({ ...body, id: (body.id as string) ?? genId("tk") });
   ok(res, trek, 201);
 });
 
 export const updateTrek = asyncHandler(async (req: Request, res: Response) => {
   const body = pick(req.body as Record<string, unknown>, TREK_FIELDS);
+  if (body.heroImage !== undefined) body.heroImage = sanitizeImage(body.heroImage);
+  if (body.gallery !== undefined) body.gallery = sanitizeGallery(body.gallery);
   if (body.slug) {
     const conflict = await Trek.findOne({ slug: body.slug, id: { $ne: req.params.id } });
     if (conflict) return fail(res, `Slug "${body.slug}" is already used by another trek.`, 409);

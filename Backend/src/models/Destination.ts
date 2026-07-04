@@ -1,6 +1,6 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
 import type { IDestination } from "./types";
-import { baseSchemaOptions, coordinatesSchema } from "./shared";
+import { baseSchemaOptions, coordinatesSchema, imageSchema, emptyImage } from "./shared";
 
 const attractionSchema = new Schema(
   { name: { type: String, required: true }, description: { type: String, default: "" } },
@@ -21,7 +21,7 @@ const budgetSchema = new Schema(
     budget: { type: Number, required: true },
     midRange: { type: Number, required: true },
     luxury: { type: Number, required: true },
-    currency: { type: String, default: "USD" }
+    currency: { type: String, default: "NPR" }
   },
   { _id: false }
 );
@@ -37,8 +37,8 @@ const destinationSchema = new Schema(
     description: { type: String, default: "" },
     category: { type: String, required: true, index: true },
     tags: { type: [String], default: [] },
-    heroImage: { type: String, default: "" },
-    gallery: { type: [String], default: [] },
+    heroImage: { type: imageSchema, default: emptyImage },
+    gallery: { type: [imageSchema], default: [] },
     coordinates: { type: coordinatesSchema, required: true },
     rating: { type: Number, default: 0 },
     reviewCount: { type: Number, default: 0 },

@@ -4,7 +4,7 @@ import { District } from "../models/District";
 import { ok, fail } from "../utils/response";
 import { asyncHandler } from "../utils/asyncHandler";
 import { genId } from "../utils/ids";
-import { escapeRegex, pick, qs } from "../utils/sanitize";
+import { escapeRegex, pick, qs, sanitizeImage, sanitizeGallery } from "../utils/sanitize";
 
 const ATTRACTION_FIELDS = [
   "slug", "districtId", "name", "category", "tagline", "description", "history",
@@ -59,12 +59,16 @@ export const listDistrictAttractions = asyncHandler(async (req: Request, res: Re
 
 export const createAttraction = asyncHandler(async (req: Request, res: Response) => {
   const body = pick(req.body as Record<string, unknown>, ATTRACTION_FIELDS);
+  if (body.heroImage !== undefined) body.heroImage = sanitizeImage(body.heroImage);
+  if (body.gallery !== undefined) body.gallery = sanitizeGallery(body.gallery);
   const attraction = await Attraction.create({ ...body, id: (body.id as string) ?? genId("a") });
   ok(res, attraction, 201);
 });
 
 export const updateAttraction = asyncHandler(async (req: Request, res: Response) => {
   const body = pick(req.body as Record<string, unknown>, ATTRACTION_FIELDS);
+  if (body.heroImage !== undefined) body.heroImage = sanitizeImage(body.heroImage);
+  if (body.gallery !== undefined) body.gallery = sanitizeGallery(body.gallery);
   const attraction = await Attraction.findOneAndUpdate(
     { id: req.params.id },
     { $set: body },

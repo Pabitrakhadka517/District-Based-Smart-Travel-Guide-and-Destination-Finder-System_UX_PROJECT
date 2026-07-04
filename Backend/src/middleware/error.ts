@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { Error as MongooseError } from "mongoose";
 import { MongoServerError } from "mongodb";
+import multer from "multer";
 
 export class HttpError extends Error {
   status: number;
@@ -19,6 +20,12 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
   // Intentional HTTP errors (thrown by controllers)
   if (err instanceof HttpError) {
     res.status(err.status).json({ success: false, error: err.message });
+    return;
+  }
+
+  // Multer upload errors (file too large, too many files, unexpected field, etc.)
+  if (err instanceof multer.MulterError) {
+    res.status(400).json({ success: false, error: err.message });
     return;
   }
 

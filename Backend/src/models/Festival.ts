@@ -1,6 +1,6 @@
 import { Schema, model, type InferSchemaType } from "mongoose";
 import type { IFestival } from "./types";
-import { baseSchemaOptions } from "./shared";
+import { baseSchemaOptions, coordinatesSchema, imageSchema, emptyImage } from "./shared";
 
 const festivalSchema = new Schema(
   {
@@ -11,9 +11,12 @@ const festivalSchema = new Schema(
     season: { type: String, enum: ["Spring", "Summer", "Autumn", "Winter"], required: true },
     type: { type: String, enum: ["Religious", "Cultural", "Harvest", "National"], required: true },
     description: { type: String, default: "" },
-    image: { type: String, default: "" },
+    image: { type: imageSchema, default: emptyImage },
     where: { type: String, default: "" },
-    duration: { type: String, default: "" }
+    districtId: { type: String, index: true },
+    isNationwide: { type: Boolean, default: false, index: true },
+    duration: { type: String, default: "" },
+    coordinates: { type: coordinatesSchema, required: true }
   },
   baseSchemaOptions
 );
