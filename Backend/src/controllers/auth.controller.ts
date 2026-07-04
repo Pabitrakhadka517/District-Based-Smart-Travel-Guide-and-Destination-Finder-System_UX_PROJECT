@@ -324,10 +324,7 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
     sendPasswordResetEmail(user.email, user.name, resetToken).catch(console.error);
     await audit(user.id, "forgot_password", req);
 
-    return ok(res, {
-      ...safeMsg,
-      ...(env.nodeEnv !== "production" && { devResetToken: resetToken })
-    });
+    return ok(res, safeMsg);
   }
 
   ok(res, safeMsg);

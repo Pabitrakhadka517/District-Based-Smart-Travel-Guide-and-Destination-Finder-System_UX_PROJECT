@@ -10,7 +10,17 @@ const WISHLIST_LIMIT = 500;
 export const getWishlist = asyncHandler(async (req: Request, res: Response) => {
   const user = await User.findOne({ id: req.auth!.sub });
   if (!user) return fail(res, "User not found", 404);
+
   const destinations = await Destination.find({ id: { $in: user.wishlist } });
+
+  // Self-heal: drop ids left behind by a destination that was later deleted,
+  // so they don't linger in the list (and toward the limit) forever.
+  if (destinations.length !== user.wishlist.length) {
+    const validIds = destinations.map((d) => d.id);
+    await User.updateOne({ id: user.id }, { $set: { wishlist: validIds } });
+    return ok(res, { ids: validIds, destinations });
+  }
+
   ok(res, { ids: user.wishlist, destinations });
 });
 
@@ -18,6 +28,9 @@ export const getWishlist = asyncHandler(async (req: Request, res: Response) => {
 export const addToWishlist = asyncHandler(async (req: Request, res: Response) => {
   const destinationId = typeof req.body?.destinationId === "string" ? req.body.destinationId : null;
   if (!destinationId) return fail(res, "destinationId is required", 400);
+
+  const destinationExists = await Destination.exists({ id: destinationId });
+  if (!destinationExists) return fail(res, "Destination not found", 404);
 
   // Atomic: only add if below limit and not already present
   const user = await User.findOneAndUpdate(

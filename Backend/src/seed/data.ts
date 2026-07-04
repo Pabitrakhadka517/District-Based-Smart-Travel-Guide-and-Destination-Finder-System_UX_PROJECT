@@ -10310,3 +10310,50 @@ export const attractions = [
   featured: false, trending: false
 }
 ];
+
+// ── Travel Alerts ─────────────────────────────────────────────────────────────
+export const travelAlerts = [
+  { id: "al1", level: "Info", text: "Lukla flights are weather-dependent — build buffer days into Everest itineraries.", districtId: "d3", isActive: true },
+  { id: "al2", level: "Advisory", text: "Monsoon landslides can disrupt highland roads from June to August.", isActive: true }
+];
+
+// ── Packing Checklists (one per destination category) ─────────────────────────
+export const packingChecklists = [
+  { id: "chk1", category: "Trekking", items: [
+    "Sturdy trekking boots", "Trekking poles", "Layered clothing (thermals, fleece, rain jacket)",
+    "Sleeping bag (for high altitude)", "First aid kit", "Snacks and water (2L minimum)",
+    "Permits and ID documents", "Headlamp with spare batteries"
+  ] },
+  { id: "chk2", category: "Heritage", items: [
+    "Camera and extra battery", "Comfortable walking shoes", "Respectful clothing (cover shoulders & knees)",
+    "Guidebook or audio guide", "Small bag for donations or offerings"
+  ] },
+  { id: "chk3", category: "Nature", items: [
+    "Insect repellent", "Sunscreen (SPF 30+)", "Binoculars", "Rain jacket",
+    "Reusable water bottle", "Trail map or offline GPS"
+  ] },
+  { id: "chk4", category: "Religious", items: [
+    "Modest clothing (cover head, shoulders, and knees)", "Remove footwear at entry",
+    "Offerings (flowers, incense, or tika)", "Respectful and quiet attitude"
+  ] },
+  { id: "chk5", category: "Wildlife", items: [
+    "Binoculars", "Camera with zoom lens", "Neutral-colored clothing (avoid bright colors)",
+    "Phone on silent mode", "Park entry fee (cash or card)"
+  ] },
+  { id: "chk6", category: "Adventure", items: [
+    "Appropriate safety gear (helmet, harness if needed)", "Sufficient water and energy snacks",
+    "First aid kit", "Emergency contacts list", "Check weather forecast before going", "Travel insurance"
+  ] },
+  { id: "chk7", category: "Cultural", items: [
+    "Notebook for cultural notes", "Respectful attire suitable for the setting",
+    "Local currency for tips and markets", "Basic phrasebook or translation app", "Open mind and curiosity"
+  ] },
+  { id: "chk8", category: "Lake", items: [
+    "Swimwear or water shoes", "Sunscreen and sunglasses", "Light boat-safe footwear",
+    "Picnic supplies", "Garbage bag (leave no trace)"
+  ] },
+  { id: "chk9", category: "City", items: [
+    "Comfortable walking shoes", "City map or offline maps app", "Small daypack",
+    "Cash in local currency", "Public transport info"
+  ] }
+];

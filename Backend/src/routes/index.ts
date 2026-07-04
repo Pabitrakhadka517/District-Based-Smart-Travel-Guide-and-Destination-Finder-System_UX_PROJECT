@@ -19,6 +19,8 @@ import * as stats        from "../controllers/stats.controller";
 import * as attractions  from "../controllers/attractions.controller";
 import * as recs        from "../controllers/recommendations.controller";
 import * as upload       from "../controllers/upload.controller";
+import * as travelAlerts from "../controllers/travelAlerts.controller";
+import * as checklists   from "../controllers/packingChecklists.controller";
 
 const router = Router();
 
@@ -69,6 +71,12 @@ router.post("/reviews",                  requireAuth,   reviews.createReview);
 router.post("/reviews/:id/helpful",      requireAuth,   reviews.voteHelpful);
 
 router.get("/search",                    publicLimiter, search.search);
+router.get("/search/popular",            publicLimiter, search.getPopularSearches);
+
+router.get("/travel-alerts",             publicLimiter, travelAlerts.listTravelAlerts);
+
+router.get("/checklists",                publicLimiter, checklists.listPackingChecklists);
+router.get("/checklists/:category",      publicLimiter, checklists.getPackingChecklist);
 
 router.get("/recommendations",               requireAuth,   recs.getPersonalized);
 router.get("/recommendations/similar/:slug", publicLimiter, recs.getSimilar);
@@ -141,6 +149,14 @@ router.delete("/guides/:id", requireAdmin, guides.deleteGuide);
 
 router.patch( "/reviews/:id/status", requireAdmin, reviews.moderateReview);
 router.delete("/reviews/:id",        requireAdmin, reviews.deleteReview);
+
+router.post(  "/travel-alerts",     requireAdmin, travelAlerts.createTravelAlert);
+router.put(   "/travel-alerts/:id", requireAdmin, travelAlerts.updateTravelAlert);
+router.delete("/travel-alerts/:id", requireAdmin, travelAlerts.deleteTravelAlert);
+
+router.post(  "/checklists",     requireAdmin, checklists.createPackingChecklist);
+router.put(   "/checklists/:id", requireAdmin, checklists.updatePackingChecklist);
+router.delete("/checklists/:id", requireAdmin, checklists.deletePackingChecklist);
 
 router.get("/dashboard/activity",  requireAuth,  stats.getUserActivity);
 router.get("/admin/analytics",     requireAdmin, stats.getAdminAnalytics);

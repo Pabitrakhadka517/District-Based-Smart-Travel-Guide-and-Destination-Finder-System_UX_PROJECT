@@ -15,6 +15,16 @@ function requireUploadPermission(req: Request): void {
   }
 }
 
+/** Wraps a Cloudinary call so its (potentially sensitive) internal error never reaches the client. */
+async function withUploadErrorHandling<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error("[upload] Cloudinary request failed", err);
+    throw new HttpError(502, "Image upload service is temporarily unavailable. Please try again shortly.");
+  }
+}
+
 // POST /api/upload/image  (requireAuth; content types are admin-only, avatar/review open to any user)
 export const uploadSingleImage = asyncHandler(async (req: Request, res: Response) => {
   requireUploadPermission(req);
@@ -23,7 +33,7 @@ export const uploadSingleImage = asyncHandler(async (req: Request, res: Response
 
   const type = req.body.type;
   const alt = typeof req.body.alt === "string" ? req.body.alt.trim().slice(0, 200) : "";
-  const image = await uploadImage(file.buffer, type, alt);
+  const image = await withUploadErrorHandling(() => uploadImage(file.buffer, type, alt));
   ok(res, image, 201);
 });
 
@@ -35,7 +45,7 @@ export const uploadGalleryImages = asyncHandler(async (req: Request, res: Respon
 
   const type = req.body.type;
   const alt = typeof req.body.alt === "string" ? req.body.alt.trim().slice(0, 200) : "";
-  const images = await Promise.all(files.map((f) => uploadImage(f.buffer, type, alt)));
+  const images = await withUploadErrorHandling(() => Promise.all(files.map((f) => uploadImage(f.buffer, type, alt))));
   ok(res, images, 201);
 });
 

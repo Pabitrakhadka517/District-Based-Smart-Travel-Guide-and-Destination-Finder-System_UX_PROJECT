@@ -10,6 +10,8 @@ import { Guide } from "../models/Guide";
 import { User } from "../models/User";
 import { TripPlan } from "../models/TripPlan";
 import { Attraction } from "../models/Attraction";
+import { TravelAlert } from "../models/TravelAlert";
+import { PackingChecklist } from "../models/PackingChecklist";
 import * as data from "./data";
 import { toImage, toGallery } from "./images";
 
@@ -28,7 +30,9 @@ export async function seed(): Promise<void> {
     Guide.deleteMany({}),
     User.deleteMany({ id: { $in: seedUserIds } }),
     TripPlan.deleteMany({ userId: { $in: seedUserIds } }),
-    Attraction.deleteMany({})
+    Attraction.deleteMany({}),
+    TravelAlert.deleteMany({}),
+    PackingChecklist.deleteMany({})
   ]);
 
   // Drop the old sparse compound index so the new partialFilterExpression definition takes effect.
@@ -82,6 +86,8 @@ export async function seed(): Promise<void> {
   await User.insertMany(users);
   await TripPlan.insertMany(data.trips);
   await Attraction.insertMany(attractions);
+  await TravelAlert.insertMany(data.travelAlerts);
+  await PackingChecklist.insertMany(data.packingChecklists);
 
   const counts = {
     districts: data.districts.length,
@@ -93,7 +99,9 @@ export async function seed(): Promise<void> {
     guides: data.guides.length,
     users: data.users.length,
     trips: data.trips.length,
-    attractions: data.attractions.length
+    attractions: data.attractions.length,
+    travelAlerts: data.travelAlerts.length,
+    packingChecklists: data.packingChecklists.length
   };
   console.log("[seed] Done:", counts);
 }

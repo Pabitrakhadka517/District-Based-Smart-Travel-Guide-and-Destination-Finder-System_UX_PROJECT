@@ -117,6 +117,21 @@ export interface IUser {
   emailVerificationExpiry?: Date;
 }
 
+export interface ITravelAlert {
+  id: string;
+  level: "Info" | "Advisory" | "Warning";
+  text: string;
+  // Optional — absent/undefined means the alert applies nationwide
+  districtId?: string;
+  isActive: boolean;
+}
+
+export interface IPackingChecklist {
+  id: string;
+  category: string; // one entry per Category value, e.g. "Trekking"
+  items: string[];
+}
+
 export interface IAuditLog {
   id: string;
   userId: string;

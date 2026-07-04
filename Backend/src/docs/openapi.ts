@@ -110,6 +110,8 @@ export const openapiSpec = {
     { name: "Guides",       description: "Curated travel guide articles" },
     { name: "Reviews",      description: "Traveller reviews for destinations" },
     { name: "Search",       description: "Cross-content full-text search" },
+    { name: "Travel Alerts",description: "Admin-managed travel advisories shown on the weather page" },
+    { name: "Checklists",   description: "Admin-managed packing checklists, one per destination category" },
     { name: "Planner",      description: "Personal trip planner (requires auth)" },
     { name: "Wishlist",     description: "Personal wishlist (requires auth)" },
     { name: "Admin",        description: "Admin-only: analytics, user management, content moderation" },
@@ -424,6 +426,26 @@ export const openapiSpec = {
           image:       { type: "string", format: "uri" },
           where:       { type: "string", example: "Nationwide" },
           duration:    { type: "string", example: "15 days" }
+        }
+      },
+
+      TravelAlert: {
+        type: "object",
+        properties: {
+          id:         { type: "string", example: "al1" },
+          level:      { type: "string", enum: ["Info", "Advisory", "Warning"], example: "Advisory" },
+          text:       { type: "string", example: "Monsoon landslides can disrupt highland roads from June to August." },
+          districtId: { type: "string", nullable: true, example: "d3" },
+          isActive:   { type: "boolean", example: true }
+        }
+      },
+
+      PackingChecklist: {
+        type: "object",
+        properties: {
+          id:       { type: "string", example: "chk1" },
+          category: { type: "string", enum: ENUM_CATEGORY, example: "Trekking" },
+          items:    { type: "array", items: { type: "string" }, example: ["Sturdy trekking boots", "Trekking poles"] }
         }
       },
 
@@ -862,9 +884,7 @@ export const openapiSpec = {
         summary: "Request a password-reset link",
         description: [
           "Sends a password-reset email to the provided address if an account exists.",
-          "The response is always the same message whether or not the email is found — this prevents email enumeration.",
-          "",
-          "In non-production environments the `devResetToken` field is included in the response for easy testing."
+          "The response is always the same message whether or not the email is found — this prevents email enumeration."
         ].join("\n"),
         operationId: "forgotPassword",
         requestBody: {
@@ -883,8 +903,7 @@ export const openapiSpec = {
           ...jsonResponse("Reset link sent (if email exists).", {
             type: "object",
             properties: {
-              message: { type: "string", example: "If that email exists, a password reset link has been sent." },
-              devResetToken: { type: "string", description: "Only present in non-production. Use in /auth/reset-password." }
+              message: { type: "string", example: "If that email exists, a password reset link has been sent." }
             }
           }),
           400: r400,
@@ -1527,6 +1546,115 @@ export const openapiSpec = {
           ...jsonResponse("Search results across all content types.", $ref("SearchResults")),
           500: r500
         }
+      }
+    },
+
+    "/search/popular": {
+      get: {
+        tags: ["Search"],
+        summary: "Trending search suggestions",
+        description: "Top destination, trek and district names derived from ratings/popularity — powers the search page's suggestion chips.",
+        operationId: "getPopularSearches",
+        responses: {
+          ...jsonResponse("List of trending names.", { type: "array", items: { type: "string" } }),
+          500: r500
+        }
+      }
+    },
+
+    // ══════════════════════════════════════════════════════════════════════
+    // TRAVEL ALERTS
+    // ══════════════════════════════════════════════════════════════════════
+
+    "/travel-alerts": {
+      get: {
+        tags: ["Travel Alerts"],
+        summary: "List travel alerts",
+        description: "Public callers receive only active alerts; admins receive all (optionally filtered with ?active=true|false).",
+        operationId: "listTravelAlerts",
+        parameters: [
+          { name: "active", in: "query", schema: { type: "boolean" }, description: "Admin-only filter" }
+        ],
+        responses: { ...jsonResponse("Travel alerts list.", arrayOf("TravelAlert")), 500: r500 }
+      },
+      post: {
+        tags: ["Travel Alerts"],
+        summary: "Create a travel alert *(admin)*",
+        operationId: "createTravelAlert",
+        security: bearerSec,
+        requestBody: { required: true, content: { "application/json": { schema: $ref("TravelAlert") } } },
+        responses: { ...jsonResponse("Alert created.", $ref("TravelAlert"), 201), 401: r401, 403: r403 }
+      }
+    },
+
+    "/travel-alerts/{id}": {
+      put: {
+        tags: ["Travel Alerts"],
+        summary: "Update a travel alert *(admin)*",
+        operationId: "updateTravelAlert",
+        security: bearerSec,
+        parameters: [pathParam("id", "Travel alert ID", "al1")],
+        requestBody: { required: true, content: { "application/json": { schema: $ref("TravelAlert") } } },
+        responses: { ...jsonResponse("Updated.", $ref("TravelAlert")), 401: r401, 403: r403, 404: r404 }
+      },
+      delete: {
+        tags: ["Travel Alerts"],
+        summary: "Delete a travel alert *(admin)*",
+        operationId: "deleteTravelAlert",
+        security: bearerSec,
+        parameters: [pathParam("id", "Travel alert ID", "al1")],
+        responses: { ...jsonResponse("Deleted.", $ref("DeleteResult")), 401: r401, 403: r403, 404: r404 }
+      }
+    },
+
+    // ══════════════════════════════════════════════════════════════════════
+    // CHECKLISTS
+    // ══════════════════════════════════════════════════════════════════════
+
+    "/checklists": {
+      get: {
+        tags: ["Checklists"],
+        summary: "List all packing checklists",
+        operationId: "listPackingChecklists",
+        responses: { ...jsonResponse("Checklists list.", arrayOf("PackingChecklist")), 500: r500 }
+      },
+      post: {
+        tags: ["Checklists"],
+        summary: "Create a packing checklist *(admin)*",
+        operationId: "createPackingChecklist",
+        security: bearerSec,
+        requestBody: { required: true, content: { "application/json": { schema: $ref("PackingChecklist") } } },
+        responses: { ...jsonResponse("Checklist created.", $ref("PackingChecklist"), 201), 401: r401, 403: r403 }
+      }
+    },
+
+    "/checklists/{category}": {
+      get: {
+        tags: ["Checklists"],
+        summary: "Get a packing checklist by category",
+        operationId: "getPackingChecklist",
+        parameters: [pathParam("category", "Destination category", "Trekking")],
+        responses: { ...jsonResponse("Checklist detail.", $ref("PackingChecklist")), 404: r404 }
+      }
+    },
+
+    "/checklists/{id}": {
+      put: {
+        tags: ["Checklists"],
+        summary: "Update a packing checklist *(admin)*",
+        operationId: "updatePackingChecklist",
+        security: bearerSec,
+        parameters: [pathParam("id", "Checklist ID", "chk1")],
+        requestBody: { required: true, content: { "application/json": { schema: $ref("PackingChecklist") } } },
+        responses: { ...jsonResponse("Updated.", $ref("PackingChecklist")), 401: r401, 403: r403, 404: r404 }
+      },
+      delete: {
+        tags: ["Checklists"],
+        summary: "Delete a packing checklist *(admin)*",
+        operationId: "deletePackingChecklist",
+        security: bearerSec,
+        parameters: [pathParam("id", "Checklist ID", "chk1")],
+        responses: { ...jsonResponse("Deleted.", $ref("DeleteResult")), 401: r401, 403: r403, 404: r404 }
       }
     },
 

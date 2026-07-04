@@ -124,3 +124,23 @@ export const search = asyncHandler(async (req: Request, res: Response) => {
       guides.length,
   });
 });
+
+// GET /api/search/popular — top names to show as "trending" search suggestions,
+// derived from real content instead of a hardcoded list.
+export const getPopularSearches = asyncHandler(async (_req: Request, res: Response) => {
+  const [destinations, treks, districts] = await Promise.all([
+    Destination.find().sort({ trending: -1, reviewCount: -1, rating: -1 }).limit(16).select("name"),
+    Trek.find().sort({ rating: -1 }).limit(8).select("name"),
+    District.find().sort({ rating: -1, destinationCount: -1 }).limit(6).select("name"),
+  ]);
+
+  const names = [
+    ...destinations.map((d) => d.name),
+    ...treks.map((t) => t.name),
+    ...districts.map((d) => d.name),
+  ];
+
+  // A trek and its destination entry (or a district and a same-named place) can share
+  // a name — dedupe so callers never render the same suggestion twice.
+  ok(res, Array.from(new Set(names)));
+});
