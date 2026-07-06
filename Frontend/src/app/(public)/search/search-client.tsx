@@ -6,7 +6,7 @@ import {
   Search, SlidersHorizontal, MapPin, X, Clock, CalendarDays, BookOpen,
   Mountain, Tent, Landmark, Bird, TreePine, Zap, MapPinned, Star,
   ArrowRight, ChevronRight, Filter, TrendingUp, Drama, CheckCircle2,
-  Sun, Activity, LayoutGrid, Globe,
+  Sun, Activity, Globe,
 } from "lucide-react";
 import { useSearch, useDistricts, useSearchAutocomplete, usePopularSearches } from "@/hooks/use-content";
 import { useDebouncedValue } from "@/hooks/use-debounced";
@@ -16,14 +16,17 @@ import { TrekCard } from "@/components/cards/trek-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { CloudinaryImage } from "@/components/shared/cloudinary-image";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { categoryStyle } from "@/lib/category-colors";
-import type { Festival, GuideArticle, District } from "@/types";
+import type { Festival, GuideArticle, District, Destination } from "@/types";
 
 /* ─── constants ──────────────────────────────────────────────────────── */
 
 const RECENT_KEY       = "nepayatra_recent_searches";
-const MAX_BUDGET_DEFAULT = 2000;
+// Real destination budgets (NPR) run from ~1,100 to ~159,600 per day (avg ~4,100) —
+// this ceiling covers the vast majority; a handful of premium multi-day treks exceed it.
+const MAX_BUDGET_DEFAULT = 20000;
+const MIN_BUDGET = 1000;
 
 const QUICK_FILTERS = [
   { label: "Adventure",  value: "Adventure", icon: Zap      },
@@ -35,26 +38,6 @@ const QUICK_FILTERS = [
   { label: "Cultural",   value: "Cultural",  icon: Star     },
   { label: "Lakes",      value: "Lake",      icon: Mountain },
 ] as const;
-
-const CONTENT_TYPES = [
-  { label: "Destinations", value: "destination", icon: Mountain    },
-  { label: "Districts",    value: "district",    icon: MapPinned   },
-  { label: "Attractions",  value: "attraction",  icon: Landmark    },
-  { label: "Treks",        value: "trek",        icon: Tent        },
-  { label: "Festivals",    value: "festival",    icon: CalendarDays},
-  { label: "Guides",       value: "guide",       icon: BookOpen    },
-] as const;
-
-const SIDEBAR_CATS = [
-  { label: "Adventure",          value: "Adventure" },
-  { label: "Religious Sites",    value: "Religious" },
-  { label: "Heritage & History", value: "Heritage"  },
-  { label: "Wildlife & Parks",   value: "Wildlife"  },
-  { label: "Trekking Routes",    value: "Trekking"  },
-  { label: "Nature & Scenic",    value: "Nature"    },
-  { label: "Lakes & Rivers",     value: "Lake"      },
-  { label: "Cultural",           value: "Cultural"  },
-];
 
 const DIFFICULTIES = ["Easy", "Moderate", "Challenging", "Strenuous"] as const;
 const SEASONS      = ["Spring", "Summer", "Autumn", "Winter"] as const;
@@ -246,7 +229,7 @@ function ResultSection({
 
 function makeSearchUrl(vals: {
   q: string; cats: string[]; dist: string; diff: string; seas: string;
-  rating: number; budget: number; srt: string; types: string[];
+  rating: number; budget: number; srt: string;
 }): string {
   const p = new URLSearchParams();
   if (vals.q)               p.set("q",          vals.q);
@@ -257,7 +240,6 @@ function makeSearchUrl(vals: {
   if (vals.rating > 0)      p.set("minRating",  String(vals.rating));
   if (vals.budget < MAX_BUDGET_DEFAULT) p.set("maxBudget", String(vals.budget));
   if (vals.srt && vals.srt !== "rating") p.set("sort",  vals.srt);
-  if (vals.types.length)    p.set("types",      vals.types.join(","));
   return `/search?${p.toString()}`;
 }
 
@@ -284,9 +266,8 @@ export function SearchClient() {
     const v = Number(sp.get("maxBudget") ?? ""); return !isNaN(v) && v > 0 ? v : MAX_BUDGET_DEFAULT;
   });
   const [sort, setSort]           = useState(sp.get("sort") ?? "rating");
-  const [contentTypes, setContentTypes] = useState<string[]>(() => {
-    const raw = sp.get("types") ?? ""; return raw ? raw.split(",").filter(Boolean) : [];
-  });
+  const [destPage, setDestPage]   = useState(1);
+  const [accumulatedDestinations, setAccumulatedDestinations] = useState<Destination[]>([]);
 
   /* ── UI state ── */
   const [dropdownOpen,  setDropdownOpen]  = useState(false);
@@ -306,14 +287,14 @@ export function SearchClient() {
   /* ── snapshot of current filter state for URL building ── */
   const currentParams = useCallback(() => ({
     q, cats: categories, dist: district, diff: difficulty,
-    seas: season, rating: minRating, budget: maxBudget,
-    srt: sort, types: contentTypes,
-  }), [q, categories, district, difficulty, season, minRating, maxBudget, sort, contentTypes]);
+    seas: season, rating: minRating, budget: maxBudget, srt: sort,
+  }), [q, categories, district, difficulty, season, minRating, maxBudget, sort]);
 
   /* ── search trigger condition ── */
   const hasSearched =
     debouncedQ.length > 0 || categories.length > 0 ||
-    !!district || !!difficulty || !!season || minRating > 0;
+    !!district || !!difficulty || !!season || minRating > 0 ||
+    maxBudget < MAX_BUDGET_DEFAULT;
 
   /* ── query string sent to backend ── */
   const queryString = useMemo(() => {
@@ -327,32 +308,38 @@ export function SearchClient() {
     if (minRating > 0) p.set("minRating",  String(minRating));
     if (maxBudget < MAX_BUDGET_DEFAULT) p.set("maxBudget", String(maxBudget));
     p.set("sort", sort);
+    if (destPage > 1) p.set("page", String(destPage));
     return p.toString();
-  }, [hasSearched, debouncedQ, categories, district, difficulty, season, minRating, maxBudget, sort]);
+  }, [hasSearched, debouncedQ, categories, district, difficulty, season, minRating, maxBudget, sort, destPage]);
+
+  // Any filter change (not the page itself) starts a fresh search from page 1.
+  useEffect(() => {
+    setDestPage(1);
+  }, [debouncedQ, categories, district, difficulty, season, minRating, maxBudget, sort]);
 
   const { data, isLoading } = useSearch(queryString);
 
+  // Accumulate destinations across "Load more" pages; a fresh page-1 result replaces them.
+  useEffect(() => {
+    if (!data) return;
+    setAccumulatedDestinations(prev =>
+      destPage === 1 ? data.destinations : [...prev, ...data.destinations]
+    );
+  }, [data, destPage]);
+
   /* ── parsed results ── */
-  const destinations    = data?.destinations ?? [];
+  const destinations    = accumulatedDestinations;
+  const destinationsTotal = data?.destinationsTotal ?? destinations.length;
+  const canLoadMoreDestinations = destinations.length < destinationsTotal;
   const attractions     = data?.attractions  ?? [];
   const resultDistricts = data?.districts    ?? [];
   const treks           = data?.treks        ?? [];
   const festivals       = data?.festivals    ?? [];
   const guides          = data?.guides       ?? [];
 
-  /* ── content-type visibility (client-side) ── */
-  const shouldShow = useCallback(
-    (type: string) => contentTypes.length === 0 || contentTypes.includes(type),
-    [contentTypes],
-  );
-
   const visibleTotal =
-    (shouldShow("district")    ? resultDistricts.length : 0) +
-    (shouldShow("destination") ? destinations.length    : 0) +
-    (shouldShow("attraction")  ? attractions.length     : 0) +
-    (shouldShow("trek")        ? treks.length           : 0) +
-    (shouldShow("festival")    ? festivals.length       : 0) +
-    (shouldShow("guide")       ? guides.length          : 0);
+    resultDistricts.length + destinationsTotal + attractions.length +
+    treks.length + festivals.length + guides.length;
 
   const hasResults = visibleTotal > 0;
 
@@ -363,8 +350,7 @@ export function SearchClient() {
     (difficulty ? 1 : 0) +
     (season     ? 1 : 0) +
     (minRating > 0 ? 1 : 0) +
-    (maxBudget < MAX_BUDGET_DEFAULT ? 1 : 0) +
-    (contentTypes.length > 0 ? 1 : 0);
+    (maxBudget < MAX_BUDGET_DEFAULT ? 1 : 0);
 
   /* ── flat suggestion list (drives keyboard navigation) ── */
   const flatSuggs = useMemo((): Sugg[] => {
@@ -397,8 +383,6 @@ export function SearchClient() {
     setMinRating(isNaN(mr) ? 0 : mr);
     const mb = Number(sp.get("maxBudget") ?? "");
     setMaxBudget(!isNaN(mb) && mb > 0 ? mb : MAX_BUDGET_DEFAULT);
-    const rawTypes = sp.get("types") ?? "";
-    setContentTypes(rawTypes ? rawTypes.split(",").filter(Boolean) : []);
   }, [sp]);
 
   /* ─── event handlers ─────────────────────────────────────────── */
@@ -456,19 +440,10 @@ export function SearchClient() {
     router.replace(makeSearchUrl({ ...currentParams(), cats: next }));
   }
 
-  /* ── content type toggle ── */
-  function toggleContentType(val: string) {
-    const next = contentTypes.includes(val)
-      ? contentTypes.filter(t => t !== val)
-      : [...contentTypes, val];
-    setContentTypes(next);
-    router.replace(makeSearchUrl({ ...currentParams(), types: next }));
-  }
-
   /* ── clear all filters ── */
   function clearAllFilters() {
     setCategories([]); setDistrict(""); setDifficulty(""); setSeason("");
-    setMinRating(0); setMaxBudget(MAX_BUDGET_DEFAULT); setContentTypes([]);
+    setMinRating(0); setMaxBudget(MAX_BUDGET_DEFAULT);
     const p = new URLSearchParams();
     if (q) p.set("q", q);
     if (sort && sort !== "rating") p.set("sort", sort);
@@ -630,7 +605,7 @@ export function SearchClient() {
                   if (total === 0) {
                     return (
                       <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-                        No suggestions for "{q}" — press Enter to search
+                        No suggestions for &quot;{q}&quot; — press Enter to search
                       </p>
                     );
                   }
@@ -658,7 +633,7 @@ export function SearchClient() {
                           onMouseDown={() => applySearch(q)}
                           className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-secondary transition hover:bg-brand-50"
                         >
-                          <span>See all results for "{q}"</span>
+                          <span>See all results for &quot;{q}&quot;</span>
                           <ArrowRight size={14} />
                         </button>
                       </div>
@@ -845,67 +820,6 @@ export function SearchClient() {
                 )}
               </div>
 
-              {/* Content Type */}
-              <div>
-                <p className="mb-2 flex items-center gap-1.5 text-sm font-medium">
-                  <LayoutGrid size={14} className="text-secondary" /> Show results
-                </p>
-                <div className="space-y-1.5">
-                  {CONTENT_TYPES.map(({ label, value, icon: Icon }) => {
-                    const checked = contentTypes.includes(value);
-                    return (
-                      <label key={value} className="flex cursor-pointer items-center gap-2.5 rounded-xl px-2 py-1.5 text-sm transition-colors hover:bg-muted/50">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleContentType(value)}
-                          className="h-4 w-4 rounded accent-secondary"
-                        />
-                        <Icon size={13} className="text-muted-foreground" />
-                        <span className={checked ? "font-medium text-brand-600" : "text-foreground"}>{label}</span>
-                      </label>
-                    );
-                  })}
-                  {contentTypes.length > 0 && (
-                    <button
-                      onClick={() => {
-                        setContentTypes([]);
-                        router.replace(makeSearchUrl({ ...currentParams(), types: [] }));
-                      }}
-                      className="mt-1 text-xs text-secondary hover:underline"
-                    >
-                      Show all types
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Category */}
-              <div>
-                <p className="mb-2 text-sm font-medium">Category</p>
-                <div className="flex flex-wrap gap-1.5">
-                  <button
-                    onClick={() => {
-                      setCategories([]);
-                      router.replace(makeSearchUrl({ ...currentParams(), cats: [] }));
-                    }}
-                  >
-                    <Badge
-                      variant={categories.length === 0 ? "accent" : "outline"}
-                      className="cursor-pointer text-xs"
-                    >All</Badge>
-                  </button>
-                  {SIDEBAR_CATS.map(({ label, value }) => (
-                    <button key={value} onClick={() => toggleCategory(value)}>
-                      <Badge
-                        variant="outline"
-                        className={cn("cursor-pointer text-xs", categories.includes(value) && categoryStyle(value))}
-                      >{label}</Badge>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* District */}
               <div>
                 <label htmlFor="district-select" className="mb-2 flex items-center gap-1.5 text-sm font-medium">
@@ -1025,11 +939,11 @@ export function SearchClient() {
                     <Globe size={14} className="text-secondary" /> Max budget / day
                   </label>
                   <span className="text-xs font-semibold text-brand-600">
-                    {maxBudget === MAX_BUDGET_DEFAULT ? "Any" : `$${maxBudget}`}
+                    {maxBudget === MAX_BUDGET_DEFAULT ? "Any" : formatCurrency(maxBudget)}
                   </span>
                 </div>
                 <input
-                  id="max-budget" type="range" min={10} max={MAX_BUDGET_DEFAULT} step={10} value={maxBudget}
+                  id="max-budget" type="range" min={MIN_BUDGET} max={MAX_BUDGET_DEFAULT} step={500} value={maxBudget}
                   onChange={(e) => {
                     setMaxBudget(Number(e.target.value));
                     router.replace(makeSearchUrl({ ...currentParams(), budget: Number(e.target.value) }));
@@ -1037,7 +951,7 @@ export function SearchClient() {
                   className="w-full accent-accent"
                 />
                 <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-                  <span>$10</span><span>Any</span>
+                  <span>{formatCurrency(MIN_BUDGET)}</span><span>Any</span>
                 </div>
               </div>
             </div>
@@ -1054,7 +968,7 @@ export function SearchClient() {
                     <>
                       <span className="font-semibold text-foreground">{visibleTotal}</span>
                       {" "}result{visibleTotal !== 1 ? "s" : ""}
-                      {debouncedQ && <> for "<span className="text-brand-600">{debouncedQ}</span>"</>}
+                      {debouncedQ && <> for &quot;<span className="text-brand-600">{debouncedQ}</span>&quot;</>}
                     </>
                   )}
                 </p>
@@ -1144,7 +1058,7 @@ export function SearchClient() {
             {/* ── results ── */}
             {!isLoading && hasResults && (
               <>
-                {shouldShow("district") && resultDistricts.length > 0 && (
+                {resultDistricts.length > 0 && (
                   <ResultSection icon={MapPinned} title="Districts" count={resultDistricts.length}>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {resultDistricts.map(d => <DistrictResultCard key={d.id} d={d} />)}
@@ -1152,15 +1066,25 @@ export function SearchClient() {
                   </ResultSection>
                 )}
 
-                {shouldShow("destination") && destinations.length > 0 && (
-                  <ResultSection icon={Mountain} title="Destinations" count={destinations.length}>
+                {destinations.length > 0 && (
+                  <ResultSection icon={Mountain} title="Destinations" count={destinationsTotal}>
                     <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                       {destinations.map(d => <DestinationCard key={d.id} destination={d} />)}
                     </div>
+                    {canLoadMoreDestinations && (
+                      <div className="mt-6 flex justify-center">
+                        <button
+                          onClick={() => setDestPage(p => p + 1)}
+                          className="rounded-xl border border-secondary/40 bg-secondary/5 px-5 py-2 text-sm font-medium text-secondary transition hover:bg-secondary/10"
+                        >
+                          Load more destinations
+                        </button>
+                      </div>
+                    )}
                   </ResultSection>
                 )}
 
-                {shouldShow("attraction") && attractions.length > 0 && (
+                {attractions.length > 0 && (
                   <ResultSection icon={Landmark} title="Attractions" count={attractions.length}>
                     <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                       {attractions.map(a => <AttractionCard key={a.id} attraction={a} />)}
@@ -1168,7 +1092,7 @@ export function SearchClient() {
                   </ResultSection>
                 )}
 
-                {shouldShow("trek") && treks.length > 0 && (
+                {treks.length > 0 && (
                   <ResultSection icon={Tent} title="Treks" count={treks.length}>
                     <div className="grid gap-6 sm:grid-cols-2">
                       {treks.map(t => <TrekCard key={t.id} trek={t} />)}
@@ -1176,7 +1100,7 @@ export function SearchClient() {
                   </ResultSection>
                 )}
 
-                {shouldShow("festival") && festivals.length > 0 && (
+                {festivals.length > 0 && (
                   <ResultSection icon={CalendarDays} title="Festivals" count={festivals.length}>
                     <div className="grid gap-4 sm:grid-cols-2">
                       {festivals.map(f => <FestivalResultCard key={f.id} f={f} />)}
@@ -1184,7 +1108,7 @@ export function SearchClient() {
                   </ResultSection>
                 )}
 
-                {shouldShow("guide") && guides.length > 0 && (
+                {guides.length > 0 && (
                   <ResultSection icon={BookOpen} title="Guides & Stories" count={guides.length}>
                     <div className="grid gap-4 sm:grid-cols-2">
                       {guides.map(g => <GuideResultCard key={g.id} g={g} />)}

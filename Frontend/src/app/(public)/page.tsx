@@ -40,7 +40,7 @@ const categories = [
 ];
 
 const quickSearches = [
-  "Trekking", "Heritage Sites", "Wildlife", "Sacred Lakes", "Viewpoints", "Temples",
+  "Trekking", "Heritage", "Wildlife", "Lakes", "Viewpoints", "Temples",
 ];
 
 const SEASON_ICON: Record<string, typeof Sun> = {
@@ -474,7 +474,7 @@ export default async function HomePage() {
                       ))}
                     </div>
                     {r.title && (
-                      <p className="mt-3 font-semibold text-white/95">"{r.title}"</p>
+                      <p className="mt-3 font-semibold text-white/95">&quot;{r.title}&quot;</p>
                     )}
                     <p className="mt-2 flex-1 text-sm text-white/80">
                       {r.body.length > 200 ? `${r.body.slice(0, 200)}…` : r.body}

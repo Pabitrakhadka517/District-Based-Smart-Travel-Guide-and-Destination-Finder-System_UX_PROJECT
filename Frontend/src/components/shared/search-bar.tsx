@@ -42,7 +42,7 @@ export function SearchBar({
         onChange={(e) => setQ(e.target.value)}
         placeholder={placeholder}
         autoComplete="off"
-        className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
       />
       {large && (
         <button
