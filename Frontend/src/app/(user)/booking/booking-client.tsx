@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   MapPin, CalendarDays, Users, Wallet, Hotel, Bus, Sparkles,
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CloudinaryImage } from "@/components/shared/cloudinary-image";
 import { EmptyState } from "@/components/shared/empty-state";
-import { useAuth } from "@/store/auth-store";
 import {
   useDestinations, useGuides, useBookings, useCreateBooking, useCancelBooking,
 } from "@/hooks/use-content";
@@ -33,8 +32,12 @@ function todayISO(): string {
 }
 
 export function BookingClient() {
-  const { isLoggedIn } = useAuth();
-  const loggedIn = isLoggedIn();
+  // This route requires auth (see middleware.ts), so the user is always
+  // logged in here — `mounted` exists purely to keep the "Your bookings"
+  // section (which reads an auth-gated query) stable during hydration,
+  // since the server always renders before the auth store rehydrates.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const { data: destinations = [] } = useDestinations();
   const { data: allGuides = [] } = useGuides();
@@ -231,26 +234,20 @@ export function BookingClient() {
             />
           </div>
 
-          {loggedIn ? (
-            <Button
-              variant="accent"
-              className="w-full"
-              disabled={!canSave || createBooking.isPending}
-              onClick={handleSave}
-            >
-              {createBooking.isPending ? (
-                <><Loader2 size={15} className="animate-spin" /> Saving…</>
-              ) : justSaved ? (
-                <><CheckCircle2 size={15} /> Booking saved!</>
-              ) : (
-                "Save booking"
-              )}
-            </Button>
-          ) : (
-            <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-center text-sm text-muted-foreground">
-              <Link href="/login" className="font-medium text-brand-600 hover:underline">Log in</Link> to save this booking to your account.
-            </div>
-          )}
+          <Button
+            variant="accent"
+            className="w-full"
+            disabled={!canSave || createBooking.isPending}
+            onClick={handleSave}
+          >
+            {createBooking.isPending ? (
+              <><Loader2 size={15} className="animate-spin" /> Saving…</>
+            ) : justSaved ? (
+              <><CheckCircle2 size={15} /> Booking saved!</>
+            ) : (
+              "Save booking"
+            )}
+          </Button>
           {createBooking.isError && (
             <p className="text-sm text-destructive">
               {createBooking.error instanceof Error ? createBooking.error.message : "Something went wrong."}
@@ -358,7 +355,7 @@ export function BookingClient() {
       </div>
 
       {/* ── Your bookings ── */}
-      {loggedIn && (
+      {mounted && (
         <div className="mt-12">
           <h2 className="font-display text-xl font-bold text-brand-600">Your bookings</h2>
           {bookings.length === 0 ? (
