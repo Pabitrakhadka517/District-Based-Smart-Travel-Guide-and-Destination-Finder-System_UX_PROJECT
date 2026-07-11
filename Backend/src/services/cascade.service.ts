@@ -10,17 +10,6 @@ import { Trek } from "../models/Trek";
 import { Destination } from "../models/Destination";
 import { cleanupReplacedImages } from "./cloudinary.service";
 
-/**
- * No model in this codebase uses Mongoose ObjectId `ref`s (every relation is a
- * hand-rolled string id), so nothing is enforced or cascaded at the schema
- * level. These helpers do it explicitly wherever a parent delete would
- * otherwise orphan child documents or leave dangling id references.
- */
-
-/** Removes every trace of a single destination: its own reviews/bookings, and
- *  any wishlist/trip-plan entries that reference it. Does NOT delete the
- *  destination document itself — callers do that (they may need its images
- *  first for Cloudinary cleanup). */
 export async function cascadeDestinationReferences(destinationId: string): Promise<void> {
   await Promise.all([
     Review.deleteMany({ destinationId }),

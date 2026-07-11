@@ -1,15 +1,3 @@
-/**
- * One-off migration: uploads every Unsplash/pravatar photo currently referenced
- * by the seed data (and a couple of hardcoded UI spots) into this project's own
- * Cloudinary account, so the app no longer depends on external image hosts for
- * its seeded/demo content. Run with: npx tsx src/seed/cloudinary-migrate.ts
- *
- * Idempotent: re-running skips any public_id that already exists in Cloudinary,
- * so a partial/failed run can simply be re-run to pick up where it left off.
- *
- * Output: writes src/seed/cloudinary-map.json — { unsplash, pravatar, placeholders }
- * — consumed by the next step (rewriting images.ts) rather than by the running app.
- */
 import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
