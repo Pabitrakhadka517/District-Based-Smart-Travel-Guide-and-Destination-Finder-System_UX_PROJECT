@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Heart, Menu, ChevronDown, User, X, LogOut } from "lucide-react";
 import { Logo } from "./logo";
+import { ConfirmDialog } from "./confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/store/auth-store";
@@ -47,6 +48,7 @@ export function Navbar() {
 
   const { isLoggedIn, isAdmin, hasHydrated } = useAuth();
   const logout = useLogout();
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   const exploreBtnRef  = useRef<HTMLButtonElement>(null);
   const exploreMenuRef = useRef<HTMLDivElement>(null);
@@ -134,6 +136,17 @@ export function Navbar() {
 
   return (
     <header className={cn("sticky top-0 z-50 transition-all duration-300", scrolled ? "glass border-b border-white/40" : "bg-transparent")}>
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Log out?"
+        description="You'll need to log in again to access your dashboard, wishlist and bookings."
+        confirmLabel="Log out"
+        cancelLabel="Stay logged in"
+        variant="danger"
+        loading={logout.isPending}
+        onConfirm={() => { setConfirmLogout(false); logout.mutate(); }}
+        onCancel={() => setConfirmLogout(false)}
+      />
       <nav aria-label="Main navigation" className="container flex h-[68px] items-center justify-between gap-4">
         <Logo />
 
@@ -222,7 +235,7 @@ export function Navbar() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => logout.mutate()}
+                onClick={() => setConfirmLogout(true)}
                 disabled={logout.isPending}
                 aria-label="Log out of your account"
               >

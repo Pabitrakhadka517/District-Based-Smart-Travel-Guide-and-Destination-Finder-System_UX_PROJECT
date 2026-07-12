@@ -3,6 +3,7 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { ToastViewport } from "@/components/shared/toast-viewport";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,9 +24,6 @@ export const metadata: Metadata = {
     "Explore Nepal by district, city and destination. Travel guides, trip planning, weather and reviews — your complete Himalayan travel companion.",
   keywords: ["Nepal travel", "Kathmandu", "Pokhara", "Everest", "trekking", "travel guide"],
   openGraph: { title: "NepalYatra", description: "Your smart guide to Nepal.", type: "website" },
-  icons: {
-    icon: "/favicon.ico",
-  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -40,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to main content
         </a>
         <QueryProvider><AuthProvider>{children}</AuthProvider></QueryProvider>
+        <ToastViewport />
       </body>
     </html>
   );
