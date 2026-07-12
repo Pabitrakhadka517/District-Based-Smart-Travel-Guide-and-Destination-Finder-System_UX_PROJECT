@@ -10,8 +10,13 @@ import { qs } from "../utils/sanitize";
 const VALID_ACCOMMODATION = ["Budget", "Standard", "Luxury"] as const;
 const VALID_TRANSPORT = ["Local Bus", "Private Jeep", "Domestic Flight"] as const;
 const VALID_STATUSES = ["pending", "confirmed", "cancelled"] as const;
+// A user acting on their own booking may only cancel it — moving a booking to
+// "confirmed" requires admin review via the /admin/bookings endpoints below.
 const USER_ALLOWED_STATUSES = ["cancelled"] as const;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Flat per-traveler estimate (NPR) — kept simple and transparent since the
+ *  form only collects a single travel date, not a trip length. */
 const ACCOMMODATION_RATE: Record<(typeof VALID_ACCOMMODATION)[number], number> = {
   Budget: 2000,
   Standard: 5000,
@@ -94,6 +99,10 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
 
   ok(res, booking, 201);
 });
+
+// PATCH /api/bookings/:id  (requireAuth, own booking only) — self-service cancel only.
+// Moving a booking to "confirmed" is an admin action (see adminUpdateBookingStatus)
+// so a user can never approve their own booking.
 export const updateBookingStatus = asyncHandler(async (req: Request, res: Response) => {
   const status = String(req.body?.status ?? "");
   if (!USER_ALLOWED_STATUSES.includes(status as (typeof USER_ALLOWED_STATUSES)[number])) {
