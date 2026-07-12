@@ -502,6 +502,7 @@ export function SearchClient() {
             aria-label="Search Nepal"
             aria-autocomplete="list"
             aria-expanded={dropdownOpen}
+            aria-controls="search-suggestions-listbox"
             role="combobox"
             className="h-14 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
@@ -526,6 +527,7 @@ export function SearchClient() {
         {/* ── autocomplete dropdown ── */}
         {dropdownOpen && (
           <div
+            id="search-suggestions-listbox"
             role="listbox" aria-label="Search suggestions"
             className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-border bg-white shadow-xl"
           >
