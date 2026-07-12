@@ -10,6 +10,8 @@ const activitySchema = new Schema(
     type:          { type: String, enum: ["destination", "attraction", "custom"], default: "custom" },
     destinationId: { type: String, default: "" },
     notes:         { type: String, default: "" },
+    location:      { type: String, default: "" },
+    visited:       { type: Boolean, default: false },
   },
   { _id: false }
 );

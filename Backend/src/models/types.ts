@@ -143,6 +143,7 @@ export interface ITripActivity {
   id: string; time: string; title: string;
   type: "destination" | "attraction" | "custom";
   destinationId: string; notes: string;
+  location: string; visited: boolean;
 }
 
 export interface ITripDay {

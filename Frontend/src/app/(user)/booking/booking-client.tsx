@@ -9,11 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CloudinaryImage } from "@/components/shared/cloudinary-image";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { BookingConfirmation } from "./booking-confirmation";
 import {
   useDestinations, useGuides, useBookings, useCreateBooking, useCancelBooking,
 } from "@/hooks/use-content";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import type { AccommodationType, TransportPreference } from "@/types";
+import { toast } from "@/store/toast-store";
+import type { AccommodationType, TransportPreference, Booking } from "@/types";
 
 const ACCOMMODATION_OPTIONS: { value: AccommodationType; label: string; rate: number; desc: string }[] = [
   { value: "Budget", label: "Budget", rate: 2000, desc: "Guesthouses & hostels" },
@@ -44,6 +47,7 @@ export function BookingClient() {
   const { data: bookings = [] } = useBookings();
   const createBooking = useCreateBooking();
   const cancelBooking = useCancelBooking();
+  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
 
   const [destinationId, setDestinationId] = useState("");
   const [travelDate, setTravelDate] = useState("");
@@ -52,7 +56,7 @@ export function BookingClient() {
   const [accommodationType, setAccommodationType] = useState<AccommodationType>("Standard");
   const [transportPreference, setTransportPreference] = useState<TransportPreference>("Local Bus");
   const [notes, setNotes] = useState("");
-  const [justSaved, setJustSaved] = useState(false);
+  const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
 
   const destination = destinations.find((d) => d.id === destinationId) ?? null;
 
@@ -77,16 +81,56 @@ export function BookingClient() {
 
   const handleSave = async () => {
     if (!canSave) return;
-    await createBooking.mutateAsync({
-      destinationId, travelDate, travelers, budget, accommodationType, transportPreference,
-      notes: notes.trim(),
+    try {
+      const booking = await createBooking.mutateAsync({
+        destinationId, travelDate, travelers, budget, accommodationType, transportPreference,
+        notes: notes.trim(),
+      });
+      setConfirmedBooking(booking);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't save your booking. Please try again.");
+    }
+  };
+
+  const closeConfirmation = () => setConfirmedBooking(null);
+
+  const scrollToBookings = () => {
+    closeConfirmation();
+    document.getElementById("your-bookings")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const confirmCancel = () => {
+    if (!pendingCancelId) return;
+    cancelBooking.mutate(pendingCancelId, {
+      onSuccess: () => toast.success("Booking cancelled."),
+      onError: (err) =>
+        toast.error(err instanceof Error ? err.message : "Couldn't cancel your booking."),
     });
-    setJustSaved(true);
-    setTimeout(() => setJustSaved(false), 3000);
+    setPendingCancelId(null);
   };
 
   return (
     <section className="container py-10">
+      <ConfirmDialog
+        open={!!pendingCancelId}
+        title="Cancel this booking?"
+        description="This can't be undone — you'll need to book again if you change your mind."
+        confirmLabel="Yes, cancel booking"
+        cancelLabel="Keep booking"
+        variant="danger"
+        loading={cancelBooking.isPending}
+        onConfirm={confirmCancel}
+        onCancel={() => setPendingCancelId(null)}
+      />
+      {confirmedBooking && destinationById[confirmedBooking.destinationId] && (
+        <BookingConfirmation
+          booking={confirmedBooking}
+          destination={destinationById[confirmedBooking.destinationId]}
+          guide={recommendedGuides[0]}
+          onClose={closeConfirmation}
+          onViewBookings={scrollToBookings}
+        />
+      )}
       <p className="kicker text-muted-foreground">Plan &amp; reserve</p>
       <h1 className="mt-1 font-display text-3xl font-bold text-brand-600">Book Your Trip</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
@@ -242,8 +286,6 @@ export function BookingClient() {
           >
             {createBooking.isPending ? (
               <><Loader2 size={15} className="animate-spin" /> Saving…</>
-            ) : justSaved ? (
-              <><CheckCircle2 size={15} /> Booking saved!</>
             ) : (
               "Save booking"
             )}
@@ -356,7 +398,7 @@ export function BookingClient() {
 
       {/* ── Your bookings ── */}
       {mounted && (
-        <div className="mt-12">
+        <div id="your-bookings" className="mt-12 scroll-mt-24">
           <h2 className="font-display text-xl font-bold text-brand-600">Your bookings</h2>
           {bookings.length === 0 ? (
             <div className="mt-4">
@@ -388,7 +430,7 @@ export function BookingClient() {
                         variant="outline"
                         size="sm"
                         className="mt-3 w-full"
-                        onClick={() => cancelBooking.mutate(b.id)}
+                        onClick={() => setPendingCancelId(b.id)}
                         disabled={cancelBooking.isPending}
                       >
                         Cancel booking
