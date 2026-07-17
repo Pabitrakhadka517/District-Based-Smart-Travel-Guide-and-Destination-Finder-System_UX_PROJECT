@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Zap, Footprints, CalendarDays, BookOpen, Flame, SlidersHorizontal, X } from "lucide-react";
+import { MapPin, Zap, Footprints, CalendarDays, BookOpen, Flame, CloudSun, SlidersHorizontal, X } from "lucide-react";
 import type { MapKind } from "@/lib/map-entry-helpers";
 import { MARKER_COLORS } from "@/lib/marker-colors";
 import { cn } from "@/lib/utils";
@@ -21,9 +21,13 @@ interface FilterPanelProps {
   counts: Record<MapKind, number>;
   showHeatmap: boolean;
   onToggleHeatmap: () => void;
+  showWeather: boolean;
+  onToggleWeather: () => void;
 }
 
-function FilterChips({ visibleKinds, onToggleKind, counts }: Omit<FilterPanelProps, "showHeatmap" | "onToggleHeatmap">) {
+type ChipProps = Omit<FilterPanelProps, "showHeatmap" | "onToggleHeatmap" | "showWeather" | "onToggleWeather">;
+
+function FilterChips({ visibleKinds, onToggleKind, counts }: ChipProps) {
   return (
     <div className="flex flex-col gap-1.5">
       {FILTERS.map(({ kind, label, icon }) => {
@@ -70,6 +74,21 @@ function HeatmapToggle({ showHeatmap, onToggleHeatmap }: Pick<FilterPanelProps, 
   );
 }
 
+function WeatherToggle({ showWeather, onToggleWeather }: Pick<FilterPanelProps, "showWeather" | "onToggleWeather">) {
+  return (
+    <button
+      onClick={onToggleWeather}
+      className={cn(
+        "mt-1.5 flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition",
+        showWeather ? "border-transparent bg-secondary text-secondary-foreground" : "border-border bg-white/60 text-muted-foreground"
+      )}
+    >
+      <CloudSun size={13} />
+      Weather
+    </button>
+  );
+}
+
 /** Floating filter panel on desktop; collapses to a pill + bottom sheet on mobile. */
 export function FilterPanel(props: FilterPanelProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -86,6 +105,7 @@ export function FilterPanel(props: FilterPanelProps) {
         <FilterChips visibleKinds={props.visibleKinds} onToggleKind={props.onToggleKind} counts={props.counts} />
         <div className="mt-2 border-t border-border pt-2">
           <HeatmapToggle showHeatmap={props.showHeatmap} onToggleHeatmap={props.onToggleHeatmap} />
+          <WeatherToggle showWeather={props.showWeather} onToggleWeather={props.onToggleWeather} />
         </div>
       </div>
 
@@ -126,6 +146,7 @@ export function FilterPanel(props: FilterPanelProps) {
               <FilterChips visibleKinds={props.visibleKinds} onToggleKind={props.onToggleKind} counts={props.counts} />
               <div className="mt-2 border-t border-border pt-2">
                 <HeatmapToggle showHeatmap={props.showHeatmap} onToggleHeatmap={props.onToggleHeatmap} />
+                <WeatherToggle showWeather={props.showWeather} onToggleWeather={props.onToggleWeather} />
               </div>
             </motion.div>
           </>

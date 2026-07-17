@@ -1,11 +1,13 @@
 import type { Request, Response } from "express";
 import { Booking } from "../models/Booking";
 import { Destination } from "../models/Destination";
+import { User } from "../models/User";
 import { ok, fail, okPaginated } from "../utils/response";
 import { asyncHandler } from "../utils/asyncHandler";
-import { genId, today } from "../utils/ids";
+import { genId, today, shiftDate } from "../utils/ids";
 import { parsePagination } from "../utils/pagination";
 import { qs } from "../utils/sanitize";
+import { sendBookingStatusEmail } from "../services/email.service";
 
 const VALID_ACCOMMODATION = ["Budget", "Standard", "Luxury"] as const;
 const VALID_TRANSPORT = ["Local Bus", "Private Jeep", "Domestic Flight"] as const;
@@ -13,6 +15,11 @@ const VALID_STATUSES = ["pending", "confirmed", "cancelled"] as const;
 // A user acting on their own booking may only cancel it — moving a booking to
 // "confirmed" requires admin review via the /admin/bookings endpoints below.
 const USER_ALLOWED_STATUSES = ["cancelled"] as const;
+// The unique index on {userId, destinationId, travelDate} only blocks an exact
+// duplicate date — nothing stops booking the same destination on every day of
+// a week, which is never a real travel plan. Treat a second active booking
+// for the same destination within this many days as the same trip.
+const NEARBY_BOOKING_WINDOW_DAYS = 7;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Flat per-traveler estimate (NPR) — kept simple and transparent since the
@@ -42,7 +49,7 @@ export const listBookings = asyncHandler(async (req: Request, res: Response) => 
   const { page, limit, skip } = parsePagination(req.query, 100);
   const filter = { userId: req.auth!.sub };
   const [bookings, total] = await Promise.all([
-    Booking.find(filter).sort({ travelDate: 1 }).skip(skip).limit(limit),
+    Booking.find(filter).sort({ travelDate: 1 }).skip(skip).limit(limit).lean(),
     Booking.countDocuments(filter)
   ]);
   okPaginated(res, bookings, total, page, limit);
@@ -54,12 +61,29 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
 
   const destinationId = String(body.destinationId ?? "");
   if (!destinationId) return fail(res, "destinationId is required", 400);
-  const destination = await Destination.findOne({ id: destinationId });
+  const destination = await Destination.findOne({ id: destinationId }).lean();
   if (!destination) return fail(res, "Destination not found", 404);
 
   const travelDate = String(body.travelDate ?? "");
   if (!DATE_RE.test(travelDate)) return fail(res, "travelDate must be YYYY-MM-DD", 400);
   if (travelDate < today()) return fail(res, "travelDate cannot be in the past", 400);
+
+  const nearbyBooking = await Booking.exists({
+    userId: req.auth!.sub,
+    destinationId,
+    status: { $ne: "cancelled" },
+    travelDate: {
+      $gte: shiftDate(travelDate, -NEARBY_BOOKING_WINDOW_DAYS),
+      $lte: shiftDate(travelDate, NEARBY_BOOKING_WINDOW_DAYS)
+    }
+  });
+  if (nearbyBooking) {
+    return fail(
+      res,
+      `You already have a booking for this destination within ${NEARBY_BOOKING_WINDOW_DAYS} days of this date. Edit or cancel it instead of creating a new one.`,
+      409
+    );
+  }
 
   const travelers = Number(body.travelers ?? 1);
   if (!Number.isFinite(travelers) || travelers < 1) return fail(res, "travelers must be a positive number", 400);
@@ -140,7 +164,7 @@ export const adminListBookings = asyncHandler(async (req: Request, res: Response
 
   const { page, limit, skip } = parsePagination(req.query, 50);
   const [bookings, total] = await Promise.all([
-    Booking.find(filter).sort({ travelDate: 1 }).skip(skip).limit(limit),
+    Booking.find(filter).sort({ travelDate: 1 }).skip(skip).limit(limit).lean(),
     Booking.countDocuments(filter)
   ]);
   okPaginated(res, bookings, total, page, limit);
@@ -161,7 +185,29 @@ export const adminUpdateBookingStatus = asyncHandler(async (req: Request, res: R
   );
   if (!booking) return fail(res, "Booking not found", 404);
   ok(res, booking);
+
+  // Best-effort notification — the status change above is already durably
+  // saved, so a missing/misconfigured SMTP transport must never fail the request.
+  if (status === "confirmed" || status === "cancelled") {
+    void notifyBookingStatusChange(booking, status);
+  }
 });
+
+async function notifyBookingStatusChange(
+  booking: { userId: string; destinationId: string; travelDate: string },
+  status: "confirmed" | "cancelled"
+): Promise<void> {
+  try {
+    const [user, destination] = await Promise.all([
+      User.findOne({ id: booking.userId }).select("name email").lean(),
+      Destination.findOne({ id: booking.destinationId }).select("name").lean()
+    ]);
+    if (!user) return;
+    await sendBookingStatusEmail(user.email, user.name, destination?.name ?? "your destination", booking.travelDate, status);
+  } catch (err) {
+    console.error("[booking] Failed to send status-change notification email:", err);
+  }
+}
 
 // DELETE /api/admin/bookings/:id  (requireAdmin) — any user's booking
 export const adminDeleteBooking = asyncHandler(async (req: Request, res: Response) => {

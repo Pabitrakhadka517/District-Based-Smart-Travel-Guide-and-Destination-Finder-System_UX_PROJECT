@@ -154,21 +154,35 @@ export function TripWorkspace({ plan, onBack, onUpdate }: Props) {
             onChange={(e) => patch("title", e.target.value)}
             className="flex-1 font-display text-xl font-bold border-0 shadow-none focus-visible:ring-0 p-0 h-auto"
           />
-          <div className="relative">
-            <select
-              value={local.status}
-              onChange={(e) => patch("status", e.target.value as TripPlan["status"])}
-              className={cn(
-                "appearance-none rounded-full border px-3 py-1.5 pr-7 text-xs font-medium outline-none cursor-pointer",
-                status.badge
-              )}
+          {local.status === "completed" || local.status === "ongoing" ? (
+            // Once a trip is underway or finished, its status is driven by the
+            // Tracking page ("Start trip" / "Mark complete"), not this form —
+            // showing an editable draft/planned/ready dropdown here would lie
+            // about the trip's real status and (for "completed") the server
+            // rejects the change anyway.
+            <span
+              title={local.status === "completed" ? "Completed trips can't change status here — see Tracking" : "Trip is in progress — managed from Tracking"}
+              className={cn("rounded-full border px-3 py-1.5 text-xs font-medium", status.badge)}
             >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
-              ))}
-            </select>
-            <ChevronDown size={11} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 opacity-60" />
-          </div>
+              {STATUS_STYLE[local.status].label}
+            </span>
+          ) : (
+            <div className="relative">
+              <select
+                value={local.status}
+                onChange={(e) => patch("status", e.target.value as TripPlan["status"])}
+                className={cn(
+                  "appearance-none rounded-full border px-3 py-1.5 pr-7 text-xs font-medium outline-none cursor-pointer",
+                  status.badge
+                )}
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
+                ))}
+              </select>
+              <ChevronDown size={11} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 opacity-60" />
+            </div>
+          )}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">

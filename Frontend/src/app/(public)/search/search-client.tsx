@@ -6,7 +6,7 @@ import {
   Search, SlidersHorizontal, MapPin, X, Clock, CalendarDays, BookOpen,
   Mountain, Tent, Landmark, Bird, TreePine, Zap, MapPinned, Star,
   ArrowRight, ChevronRight, Filter, TrendingUp, Drama, CheckCircle2,
-  Sun, Activity, Globe,
+  Sun, Activity, Globe, WifiOff,
 } from "lucide-react";
 import { useSearch, useDistricts, useSearchAutocomplete, usePopularSearches } from "@/hooks/use-content";
 import { useDebouncedValue } from "@/hooks/use-debounced";
@@ -317,7 +317,7 @@ export function SearchClient() {
     setDestPage(1);
   }, [debouncedQ, categories, district, difficulty, season, minRating, maxBudget, sort]);
 
-  const { data, isLoading } = useSearch(queryString);
+  const { data, isLoading, isError, refetch } = useSearch(queryString);
 
   // Accumulate destinations across "Load more" pages; a fresh page-1 result replaces them.
   useEffect(() => {
@@ -1057,8 +1057,18 @@ export function SearchClient() {
             {/* ── loading ── */}
             {isLoading && <SearchLoadingSkeleton />}
 
+            {/* ── error ── */}
+            {!isLoading && isError && (
+              <EmptyState
+                icon={WifiOff}
+                title="Search is temporarily unavailable"
+                description="We couldn't reach the search service. Please check your connection and try again."
+                action={{ label: "Retry", onClick: () => refetch() }}
+              />
+            )}
+
             {/* ── results ── */}
-            {!isLoading && hasResults && (
+            {!isLoading && !isError && hasResults && (
               <>
                 {resultDistricts.length > 0 && (
                   <ResultSection icon={MapPinned} title="Districts" count={resultDistricts.length}>
@@ -1121,7 +1131,7 @@ export function SearchClient() {
             )}
 
             {/* ── empty state ── */}
-            {!isLoading && !hasResults && data && (
+            {!isLoading && !isError && !hasResults && data && (
               <div>
                 <EmptyState
                   icon={Search}

@@ -55,7 +55,7 @@ const SEASON_ICON: Record<string, typeof Sun> = {
 function FestivalCard({ f }: { f: Festival }) {
   return (
     <Link
-      href="/festivals"
+      href={`/festivals/${f.slug}`}
       className="group block overflow-hidden rounded-2xl border border-border/70 bg-white shadow-soft card-hover"
     >
       <div className="relative h-44 overflow-hidden">

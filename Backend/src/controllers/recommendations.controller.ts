@@ -42,9 +42,12 @@ export const getPersonalized = asyncHandler(async (req: Request, res: Response) 
 
   const [user, tripPlans, userReviews, allDestinations] = await Promise.all([
     User.findOne({ id: userId }),
-    TripPlan.find({ userId }),
-    Review.find({ userId, status: "approved" }).select("destinationId"),
-    Destination.find({}).select(DEST_SELECT),
+    TripPlan.find({ userId }).lean(),
+    Review.find({ userId, status: "approved" }).select("destinationId").lean(),
+    // Read-only JSON response — .lean() skips Mongoose document hydration for
+    // every candidate this scores, which matters here since every destination
+    // in the catalog is scanned and scored on each cache-miss request.
+    Destination.find({}).select(DEST_SELECT).lean(),
   ]);
 
   if (!user) return fail(res, "User not found", 404);
@@ -124,8 +127,8 @@ export const getSimilar = asyncHandler(async (req: Request, res: Response) => {
   if (cached) return ok(res, cached);
 
   const [src, allDestinations] = await Promise.all([
-    Destination.findOne({ slug }).select(DEST_SELECT),
-    Destination.find({}).select(DEST_SELECT),
+    Destination.findOne({ slug }).select(DEST_SELECT).lean(),
+    Destination.find({}).select(DEST_SELECT).lean(),
   ]);
 
   if (!src) return fail(res, "Destination not found", 404);
@@ -164,7 +167,8 @@ export const getTrending = asyncHandler(async (_req: Request, res: Response) => 
     $or: [{ trending: true }, { rating: { $gte: 4 } }],
   })
     .select(DEST_SELECT)
-    .limit(30);
+    .limit(30)
+    .lean();
 
   const results = destinations
     .slice()

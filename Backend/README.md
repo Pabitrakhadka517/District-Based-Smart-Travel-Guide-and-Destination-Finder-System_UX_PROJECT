@@ -59,6 +59,7 @@ CORS is enabled for `CORS_ORIGIN` (default `http://localhost:3000`).
 - `GET /api/guides` (`?featured= &category=`) · `GET /api/guides/:slug`
 - `GET /api/reviews` (`?destination= &status=`) · `POST /api/reviews` (creates a pending review)
 - `GET /api/search` (`?q= &category= &district= &minRating= &maxBudget= &sort=`)
+- `POST /api/contact` (public contact form — stores the message and best-effort emails `CONTACT_EMAIL`)
 
 ### Auth
 - `POST /api/auth/register` · `POST /api/auth/login` → `{ token, user }`
@@ -104,3 +105,13 @@ src/
   documents' `id` field so all cross-references (`cityId`, `districtId`, `nearby`, …) match.
 - `_id` / `__v` are stripped from responses; user passwords are never returned.
 - Password reset tokens are kept in memory for the demo; wire up email + persistence for production.
+
+## Scope decisions
+
+- **Email verification is intentionally not implemented.** An earlier build included a full
+  verify-email flow (token + email + gated access); it was deliberately removed so `register()`
+  activates an account immediately, keeping the demo/grading flow frictionless without needing a
+  working SMTP inbox. This is a conscious scope choice, not an oversight — if this app were taken
+  to production, restoring it (the `IUser.emailVerified` field pattern and `verify-email`/
+  `resend-verification` routes) would close the "anyone can register with an email they don't own"
+  gap called out in the July 2026 audit.

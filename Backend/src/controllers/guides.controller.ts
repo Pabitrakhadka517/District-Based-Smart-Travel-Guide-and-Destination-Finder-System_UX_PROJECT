@@ -29,7 +29,7 @@ export const listGuides = asyncHandler(async (req: Request, res: Response) => {
 
   const { page, limit, skip } = parsePagination(req.query, 100);
   const [guides, total] = await Promise.all([
-    Guide.find(filter).sort({ date: -1 }).skip(skip).limit(limit),
+    Guide.find(filter).sort({ date: -1 }).skip(skip).limit(limit).lean(),
     Guide.countDocuments(filter)
   ]);
   okPaginated(res, guides, total, page, limit);
@@ -37,12 +37,14 @@ export const listGuides = asyncHandler(async (req: Request, res: Response) => {
 
 // GET /api/guides/:slug -> GuideArticle
 export const getGuide = asyncHandler(async (req: Request, res: Response) => {
-  const guide = await Guide.findOne({ slug: req.params.slug });
+  const guide = await Guide.findOne({ slug: req.params.slug }).lean();
   if (!guide) return fail(res, "Guide not found", 404);
   ok(res, guide);
 });
 
 // --- Admin CRUD ---
+// No onDeleted cascade needed: nothing else in the schema references a Guide
+// by id.
 
 const crud = makeAdminCrud(Guide, {
   fields: GUIDE_FIELDS,

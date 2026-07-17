@@ -8,7 +8,10 @@ interface WishlistState {
   setHasHydrated: (v: boolean) => void;
   toggle: (id: string) => void;
   has: (id: string) => boolean;
-  /** Unions in ids from the server without dropping anything saved locally (e.g. offline/pre-sync). */
+  /** Replaces local state with the authenticated user's server-side wishlist —
+   *  the server is the source of truth, so this also correctly drops any id
+   *  that was removed elsewhere (another device, another session) since the
+   *  last sync, instead of leaving it stuck locally forever. */
   merge: (serverIds: string[]) => void;
   clear: () => void;
 }
@@ -24,8 +27,7 @@ export const useWishlist = create<WishlistState>()(
           ids: s.ids.includes(id) ? s.ids.filter((x) => x !== id) : [...s.ids, id]
         })),
       has: (id) => get().ids.includes(id),
-      merge: (serverIds) =>
-        set((s) => ({ ids: Array.from(new Set([...s.ids, ...serverIds])) })),
+      merge: (serverIds) => set({ ids: [...serverIds] }),
       clear: () => set({ ids: [] })
     }),
     {

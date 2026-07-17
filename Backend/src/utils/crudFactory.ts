@@ -18,8 +18,10 @@ interface CrudOptions {
   galleryFields?: string[];
   /** When true, rejects an update whose new slug collides with another document. */
   checkSlugConflict?: boolean;
-  /** Optional cascade hook run after a document is deleted (its id is passed in). */
-  onDeleted?: (id: string) => Promise<void>;
+  /** Optional cascade hook run after a document is deleted (the now-deleted document is passed in). */
+  onDeleted?: (doc: Record<string, unknown>) => Promise<void>;
+  /** Optional hook run after a document is created or updated (the resulting document is passed in). */
+  onWritten?: (doc: Record<string, unknown>) => Promise<void>;
 }
 
 /**
@@ -57,6 +59,7 @@ export function makeAdminCrud(
   const create = asyncHandler(async (req: Request, res: Response) => {
     const body = sanitizeBody(pick(req.body as Record<string, unknown>, opts.fields));
     const doc = await Model.create({ ...body, id: (body.id as string) ?? genId(opts.idPrefix) });
+    if (opts.onWritten) await opts.onWritten(doc as unknown as Record<string, unknown>);
     ok(res, doc, 201);
   });
 
@@ -84,6 +87,7 @@ export function makeAdminCrud(
       const after = allImageFields.map((f) => (doc as unknown as Record<string, unknown>)[f]);
       cleanupReplacedImages(before, after);
     }
+    if (opts.onWritten) await opts.onWritten(doc as unknown as Record<string, unknown>);
     ok(res, doc);
   });
 
@@ -95,7 +99,7 @@ export function makeAdminCrud(
       const before = allImageFields.map((f) => (doc as unknown as Record<string, unknown>)[f]);
       cleanupReplacedImages(before, []);
     }
-    if (opts.onDeleted) await opts.onDeleted(doc.id);
+    if (opts.onDeleted) await opts.onDeleted(doc as unknown as Record<string, unknown>);
     ok(res, { id: req.params.id, deleted: true });
   });
 

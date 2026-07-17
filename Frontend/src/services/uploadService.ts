@@ -1,4 +1,4 @@
-import { apiUpload, apiDelete, getApiBase, getAuthToken } from "./api-client";
+import { apiUpload, apiDelete, getApiBase } from "./api-client";
 import type { CloudinaryImage } from "@/types";
 
 export type UploadType =
@@ -42,8 +42,8 @@ function uploadWithProgress<T>(
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${getApiBase()}${path}`);
-    const token = getAuthToken();
-    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    // Auth is via the httpOnly access-token cookie, sent automatically because
+    // of withCredentials — same as every other request in this app.
     xhr.withCredentials = true;
 
     xhr.upload.onprogress = (e) => {

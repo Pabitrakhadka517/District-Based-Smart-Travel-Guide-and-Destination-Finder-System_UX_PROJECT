@@ -73,8 +73,11 @@ export const search = asyncHandler(async (req: Request, res: Response) => {
     hasText || !!districtId || categories.length > 0 || minRating > 0 || !!season;
 
   /* ── Trek filter ─────────────────────────────────────────────── */
+  // Treks have no `category` field of their own (they're inherently "Trekking"),
+  // so selecting the "Trekking" category is treated as "include treks" rather
+  // than an actual field filter.
   const shouldSearchTreks =
-    hasText || categories.includes("Trekking") || !!difficulty || !!season;
+    hasText || categories.includes("Trekking") || !!difficulty || !!season || !!districtId || minRating > 0;
   const trekFilter: Record<string, unknown> = {};
   if (hasText) {
     trekFilter.$or = [
@@ -85,6 +88,49 @@ export const search = asyncHandler(async (req: Request, res: Response) => {
   }
   if (difficulty) trekFilter.difficulty  = difficulty;
   if (season)     trekFilter.bestSeasons = season;
+  // districtIds is an array field — this matches any trek that passes through it.
+  if (districtId) trekFilter.districtIds = districtId;
+  if (!isNaN(minRating) && minRating > 0) trekFilter.rating = { $gte: minRating };
+
+  /* ── Festival filter ─────────────────────────────────────────── */
+  // Composed as $and-of-conditions rather than reusing a single top-level $or,
+  // since text-match and district-match are each their own OR clause that
+  // must both hold — merging them into one flat $or would wrongly turn
+  // "text matches AND in this district" into "text matches OR in this district".
+  const shouldSearchFestivals = hasText || !!districtId || categories.length > 0;
+  const festivalConditions: Record<string, unknown>[] = [];
+  if (hasText) {
+    festivalConditions.push({
+      $or: [
+        { name: { $regex: escapedQ, $options: "i" } },
+        { description: { $regex: escapedQ, $options: "i" } },
+      ],
+    });
+  }
+  // Nationwide festivals (Dashain, Tihar, ...) are relevant regardless of the
+  // district filter, matching how a district hub page includes them (see
+  // districts.controller.ts's `$or` on districtId/isNationwide).
+  if (districtId) festivalConditions.push({ $or: [{ districtId }, { isNationwide: true }] });
+  // `categories` is the Destination/Attraction taxonomy; Festival.type only
+  // overlaps on "Religious"/"Cultural" — $in against non-overlapping values
+  // (e.g. "Lake") simply matches nothing, which is correct, not a bug.
+  if (categories.length > 0) festivalConditions.push({ type: { $in: categories } });
+  const festivalFilter: Record<string, unknown> = festivalConditions.length > 0 ? { $and: festivalConditions } : {};
+
+  /* ── Guide filter ────────────────────────────────────────────── */
+  const shouldSearchGuides = hasText || !!districtId || categories.length > 0;
+  const guideFilter: Record<string, unknown> = {};
+  if (hasText) {
+    guideFilter.$or = [
+      { title: { $regex: escapedQ, $options: "i" } },
+      { excerpt: { $regex: escapedQ, $options: "i" } },
+      { tags: { $regex: escapedQ, $options: "i" } },
+    ];
+  }
+  if (districtId) guideFilter.districtId = districtId;
+  // Guide.category only overlaps the Destination taxonomy on "Trekking" — same
+  // reasoning as Festival.type above.
+  if (categories.length > 0) guideFilter.category = { $in: categories };
 
   /* ── Run all queries in parallel ─────────────────────────────── */
   // Destinations are the primary, most prominent result section, so they get
@@ -92,27 +138,32 @@ export const search = asyncHandler(async (req: Request, res: Response) => {
   // sections whose caps are just bumped comfortably above current collection
   // sizes so a broad query can never silently drop matches.
   const [destinations, destinationsTotal, districts, attractions, treks, festivals, guides] = await Promise.all([
-    Destination.find(destFilter).sort(mongoSort).skip(skip).limit(limit),
+    Destination.find(destFilter).sort(mongoSort).skip(skip).limit(limit).lean(),
     Destination.countDocuments(destFilter),
 
     hasText
-      ? District.find({ name: { $regex: escapedQ, $options: "i" } }).limit(80)
+      ? District.find({
+          $or: [
+            { name: { $regex: escapedQ, $options: "i" } },
+            { province: { $regex: escapedQ, $options: "i" } },
+          ],
+        }).limit(80).lean()
       : Promise.resolve([]),
 
     shouldSearchAttractions
-      ? Attraction.find(attrFilter).sort({ rating: -1 }).limit(350)
+      ? Attraction.find(attrFilter).sort({ rating: -1 }).limit(350).lean()
       : Promise.resolve([]),
 
     shouldSearchTreks
-      ? Trek.find(trekFilter).sort({ rating: -1 }).limit(50)
+      ? Trek.find(trekFilter).sort({ rating: -1 }).limit(50).lean()
       : Promise.resolve([]),
 
-    hasText
-      ? Festival.find({ name: { $regex: escapedQ, $options: "i" } }).limit(50)
+    shouldSearchFestivals
+      ? Festival.find(festivalFilter).limit(50).lean()
       : Promise.resolve([]),
 
-    hasText
-      ? Guide.find({ title: { $regex: escapedQ, $options: "i" } }).limit(50)
+    shouldSearchGuides
+      ? Guide.find(guideFilter).limit(50).lean()
       : Promise.resolve([]),
   ]);
 
@@ -139,9 +190,9 @@ export const search = asyncHandler(async (req: Request, res: Response) => {
 // derived from real content instead of a hardcoded list.
 export const getPopularSearches = asyncHandler(async (_req: Request, res: Response) => {
   const [destinations, treks, districts] = await Promise.all([
-    Destination.find().sort({ trending: -1, reviewCount: -1, rating: -1 }).limit(16).select("name"),
-    Trek.find().sort({ rating: -1 }).limit(8).select("name"),
-    District.find().sort({ rating: -1, destinationCount: -1 }).limit(6).select("name"),
+    Destination.find().sort({ trending: -1, reviewCount: -1, rating: -1 }).limit(16).select("name").lean(),
+    Trek.find().sort({ rating: -1 }).limit(8).select("name").lean(),
+    District.find().sort({ rating: -1, destinationCount: -1 }).limit(6).select("name").lean(),
   ]);
 
   const names = [

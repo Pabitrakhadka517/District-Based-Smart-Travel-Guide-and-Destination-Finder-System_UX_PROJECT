@@ -10,28 +10,27 @@ export interface PlatformStats {
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
 
+// Throws on any failure (network error or non-2xx) so the nearest Next.js
+// error boundary (app/error.tsx) can show a real error instead of the page
+// silently rendering as if the data were genuinely empty.
 async function get<T>(path: string): Promise<T> {
-  try {
-    const res = await fetch(`${API}${path}`, { cache: "no-store" });
-    if (!res.ok) throw new Error(`${res.status}`);
-    const json = await res.json();
-    return json.data as T;
-  } catch {
-    return ([] as unknown) as T;
-  }
+  const res = await fetch(`${API}${path}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Request to ${path} failed with status ${res.status}`);
+  const json = await res.json();
+  return json.data as T;
 }
 
-export const getDistricts = () => get<District[]>("/districts");
+// Explicit high limit (matching the backend's global maxLimit ceiling) rather than
+// relying on each resource's smaller default — keeps "fetch everything" callers
+// (admin tables, public list pages) from silently truncating as the catalog grows.
+export const getDistricts = () => get<District[]>("/districts?limit=500");
 export const getDistrict = async (slug: string): Promise<District | null> => {
-  try {
-    const res = await fetch(`${API}/districts/${slug}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const json = await res.json();
-    // Backend returns the full district hub payload — extract just the district
-    return (json.data?.district as District) ?? null;
-  } catch {
-    return null;
-  }
+  const res = await fetch(`${API}/districts/${slug}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Request to /districts/${slug} failed with status ${res.status}`);
+  const json = await res.json();
+  // Backend returns the full district hub payload — extract just the district
+  return (json.data?.district as District) ?? null;
 };
 
 export interface DistrictFull {
@@ -49,27 +48,21 @@ export interface DistrictFull {
 }
 
 export const getDistrictFull = async (slug: string): Promise<DistrictFull | null> => {
-  try {
-    const res = await fetch(`${API}/districts/${slug}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data ?? null;
-  } catch {
-    return null;
-  }
+  const res = await fetch(`${API}/districts/${slug}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Request to /districts/${slug} failed with status ${res.status}`);
+  const json = await res.json();
+  return json.data ?? null;
 };
 
-export const getDestinations = () => get<Destination[]>("/destinations");
+export const getDestinations = () => get<Destination[]>("/destinations?limit=500");
 export const getDestination = async (slug: string): Promise<Destination | null> => {
-  try {
-    const res = await fetch(`${API}/destinations/${slug}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const json = await res.json();
-    // Backend returns { destination, reviews, nearby } — extract just the destination
-    return (json.data?.destination as Destination) ?? null;
-  } catch {
-    return null;
-  }
+  const res = await fetch(`${API}/destinations/${slug}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Request to /destinations/${slug} failed with status ${res.status}`);
+  const json = await res.json();
+  // Backend returns { destination, reviews, nearby } — extract just the destination
+  return (json.data?.destination as Destination) ?? null;
 };
 
 export interface DestinationFull {
@@ -82,14 +75,11 @@ export interface DestinationFull {
 }
 
 export const getDestinationFull = async (slug: string): Promise<DestinationFull | null> => {
-  try {
-    const res = await fetch(`${API}/destinations/${slug}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data ?? null;
-  } catch {
-    return null;
-  }
+  const res = await fetch(`${API}/destinations/${slug}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Request to /destinations/${slug} failed with status ${res.status}`);
+  const json = await res.json();
+  return json.data ?? null;
 };
 export const getFeatured = () => get<Destination[]>("/destinations?featured=1");
 export const getTrending = () => get<Destination[]>("/destinations?trending=1");
@@ -98,38 +88,40 @@ export const getNearby = (ids: string[]) => get<Destination[]>(`/destinations?id
 export const getReviews = (destinationId?: string) =>
   get<Review[]>(destinationId ? `/reviews?destination=${destinationId}` : "/reviews");
 
-export const getTreks = () => get<Trek[]>("/treks");
+export const getTreks = () => get<Trek[]>("/treks?limit=500");
 export const getTrek = async (slug: string): Promise<Trek | null> => {
-  try {
-    const res = await fetch(`${API}/treks/${slug}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return (json.data as Trek) ?? null;
-  } catch {
-    return null;
-  }
+  const res = await fetch(`${API}/treks/${slug}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Request to /treks/${slug} failed with status ${res.status}`);
+  const json = await res.json();
+  return (json.data as Trek) ?? null;
 };
 export const getFeaturedTreks = () => get<Trek[]>("/treks?featured=1");
 
-export const getFestivals = () => get<Festival[]>("/festivals");
+export const getFestivals = () => get<Festival[]>("/festivals?limit=500");
+export const getFestival = async (slug: string): Promise<Festival | null> => {
+  const res = await fetch(`${API}/festivals/${slug}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Request to /festivals/${slug} failed with status ${res.status}`);
+  const json = await res.json();
+  return (json.data as Festival) ?? null;
+};
 
-export const getGuides = () => get<GuideArticle[]>("/guides");
+export const getGuides = () => get<GuideArticle[]>("/guides?limit=500");
 export const getGuide = async (slug: string): Promise<GuideArticle | null> => {
-  try {
-    const res = await fetch(`${API}/guides/${slug}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return (json.data as GuideArticle) ?? null;
-  } catch {
-    return null;
-  }
+  const res = await fetch(`${API}/guides/${slug}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Request to /guides/${slug} failed with status ${res.status}`);
+  const json = await res.json();
+  return (json.data as GuideArticle) ?? null;
 };
 export const getFeaturedGuides = () => get<GuideArticle[]>("/guides?featured=1");
 
 export const getStats = () => get<PlatformStats>("/stats");
 export const getTopReviews = () => get<Review[]>("/reviews?status=approved");
 
-export const getAttractions = (params = "") => get<TouristAttraction[]>(`/attractions${params}`);
+export const getAttractions = (params = "") =>
+  get<TouristAttraction[]>(`/attractions${params}${params.includes("?") ? "&" : "?"}limit=500`);
 
 export const getDistrictAttractions = (districtSlug: string) =>
   get<TouristAttraction[]>(`/districts/${districtSlug}/attractions`);
@@ -141,12 +133,9 @@ export const getPopularSearches = () => get<string[]>("/search/popular");
 export const getAttraction = async (
   slug: string
 ): Promise<{ attraction: TouristAttraction; nearby: TouristAttraction[] } | null> => {
-  try {
-    const res = await fetch(`${API}/attractions/${slug}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data ?? null;
-  } catch {
-    return null;
-  }
+  const res = await fetch(`${API}/attractions/${slug}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Request to /attractions/${slug} failed with status ${res.status}`);
+  const json = await res.json();
+  return json.data ?? null;
 };

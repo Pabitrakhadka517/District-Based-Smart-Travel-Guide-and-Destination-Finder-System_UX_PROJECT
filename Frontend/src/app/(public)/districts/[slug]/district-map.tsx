@@ -6,6 +6,7 @@ import type { Destination, TouristAttraction, Trek, Festival, GuideArticle, Dist
 import { type MapEntry } from "@/lib/map-entry-helpers";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { FlyToTarget } from "@/components/maps/leaflet/fly-to-controller";
+import type { WeatherPoint } from "@/components/maps/leaflet/weather-layer";
 
 const NepalMap = dynamic(
   () => import("@/components/maps/leaflet/nepal-map").then((m) => m.NepalMap),
@@ -39,6 +40,10 @@ export function DistrictMap({ district, destinations, attractions, treks, festiv
     zoom: 11,
   }), [district]);
 
+  const weatherPoints = useMemo<WeatherPoint[]>(() => [
+    { id: district.id, lat: district.coordinates.lat, lng: district.coordinates.lng, label: district.name },
+  ], [district]);
+
   return (
     <div className="relative h-[420px] w-full overflow-hidden rounded-2xl border border-border shadow-soft">
       <NepalMap
@@ -49,6 +54,8 @@ export function DistrictMap({ district, destinations, attractions, treks, festiv
         provinceCounts={{}}
         heatPoints={[]}
         showHeatmap={false}
+        weatherPoints={weatherPoints}
+        showWeather
       />
     </div>
   );

@@ -60,14 +60,16 @@ export const useAuth = create<AuthState>()(
       },
 
       isAdmin: () => get().user?.role === "admin",
-      isLoggedIn: () => !!get().token
+      // Login state is judged by `user`, not `token`: the access token now lives
+      // only in an httpOnly cookie (never in JS-readable storage, so an XSS bug
+      // can't exfiltrate it) and isn't persisted here at all — see partialize below.
+      isLoggedIn: () => !!get().user
     }),
     {
       name: "nepayatra-auth",
-      // token + user live in this single persisted key — api-client.ts reads the
-      // token straight out of this same localStorage entry rather than keeping
-      // a second copy, so there is exactly one place a token lives on disk.
-      partialize: (s) => ({ token: s.token, user: s.user }),
+      // Deliberately excludes `token` — it's kept in memory for this tab's
+      // lifetime (see setAuth/clearAuth) but never written to localStorage.
+      partialize: (s) => ({ user: s.user }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       }

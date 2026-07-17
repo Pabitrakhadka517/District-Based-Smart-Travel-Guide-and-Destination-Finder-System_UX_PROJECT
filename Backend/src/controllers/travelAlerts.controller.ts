@@ -20,7 +20,7 @@ export const listTravelAlerts = asyncHandler(async (req: Request, res: Response)
     filter.isActive = activeParam === "true";
   }
 
-  const alerts = await TravelAlert.find(filter).sort({ level: 1 });
+  const alerts = await TravelAlert.find(filter).sort({ level: 1 }).lean();
   ok(res, alerts);
 });
 

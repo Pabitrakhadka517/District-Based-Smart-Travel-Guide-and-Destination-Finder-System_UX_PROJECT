@@ -22,6 +22,7 @@ import * as upload       from "../controllers/upload.controller";
 import * as travelAlerts from "../controllers/travelAlerts.controller";
 import * as checklists   from "../controllers/packingChecklists.controller";
 import * as bookings     from "../controllers/booking.controller";
+import * as contact      from "../controllers/contact.controller";
 
 const router = Router();
 
@@ -72,6 +73,8 @@ router.get("/guides/:slug",              publicLimiter, guides.getGuide);
 
 router.get("/reviews",                   publicLimiter, optionalAuth, reviews.listReviews);
 router.post("/reviews",                  requireAuth,   reviews.createReview);
+router.patch("/reviews/:id",             requireAuth,   reviews.updateReview);   // author only (checked in controller)
+router.delete("/reviews/:id",            requireAuth,   reviews.deleteReview);   // author or admin (checked in controller)
 router.post("/reviews/:id/helpful",      requireAuth,   reviews.voteHelpful);
 
 router.get("/search",                    publicLimiter, search.search);
@@ -85,6 +88,9 @@ router.get("/checklists/:category",      publicLimiter, checklists.getPackingChe
 router.get("/recommendations",               requireAuth,   recs.getPersonalized);
 router.get("/recommendations/similar/:slug", publicLimiter, recs.getSimilar);
 router.get("/recommendations/trending",      publicLimiter, recs.getTrending);
+
+// Unauthenticated write endpoint — kept as tight as the auth flows to resist spam/abuse.
+router.post("/contact", authLimiter, contact.submitContactMessage);
 
 /* -------------------------------- Auth ---------------------------------- */
 router.post("/auth/register",       authLimiter, auth.register);
@@ -157,7 +163,6 @@ router.put(   "/guides/:id", requireAdmin, guides.updateGuide);
 router.delete("/guides/:id", requireAdmin, guides.deleteGuide);
 
 router.patch( "/reviews/:id/status", requireAdmin, reviews.moderateReview);
-router.delete("/reviews/:id",        requireAdmin, reviews.deleteReview);
 
 router.post(  "/travel-alerts",     requireAdmin, travelAlerts.createTravelAlert);
 router.put(   "/travel-alerts/:id", requireAdmin, travelAlerts.updateTravelAlert);

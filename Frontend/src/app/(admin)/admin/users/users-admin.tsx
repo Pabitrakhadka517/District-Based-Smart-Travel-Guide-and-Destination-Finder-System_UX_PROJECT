@@ -56,20 +56,34 @@ export function UsersAdmin() {
   };
 
   const bulkDelete = async (ids: string[]) => {
-    try {
-      await Promise.all(ids.map((id) => apiDelete(`/users/${id}`)));
-      setUsers((prev) => prev.filter((u) => !ids.includes(u.id)));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to delete selected users");
+    setError(null);
+    const results = await Promise.allSettled(ids.map((id) => apiDelete(`/users/${id}`)));
+    const succeeded = new Set(ids.filter((_, i) => results[i].status === "fulfilled"));
+    if (succeeded.size > 0) setUsers((prev) => prev.filter((u) => !succeeded.has(u.id)));
+    const failed = ids.length - succeeded.size;
+    if (failed > 0) {
+      setError(
+        succeeded.size > 0
+          ? `Deleted ${succeeded.size} of ${ids.length} users — ${failed} failed. Select the rest and try again.`
+          : `Failed to delete the selected user${ids.length > 1 ? "s" : ""}.`
+      );
     }
   };
 
   const bulkPromote = async (ids: string[]) => {
-    try {
-      await Promise.all(ids.map((id) => apiPatch(`/users/${id}/role`, { role: "admin" })));
-      setUsers((prev) => prev.map((u) => ids.includes(u.id) ? { ...u, role: "admin" as const } : u));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to promote selected users");
+    setError(null);
+    const results = await Promise.allSettled(ids.map((id) => apiPatch(`/users/${id}/role`, { role: "admin" })));
+    const succeeded = new Set(ids.filter((_, i) => results[i].status === "fulfilled"));
+    if (succeeded.size > 0) {
+      setUsers((prev) => prev.map((u) => succeeded.has(u.id) ? { ...u, role: "admin" as const } : u));
+    }
+    const failed = ids.length - succeeded.size;
+    if (failed > 0) {
+      setError(
+        succeeded.size > 0
+          ? `Promoted ${succeeded.size} of ${ids.length} users — ${failed} failed. Select the rest and try again.`
+          : `Failed to promote the selected user${ids.length > 1 ? "s" : ""}.`
+      );
     }
   };
 

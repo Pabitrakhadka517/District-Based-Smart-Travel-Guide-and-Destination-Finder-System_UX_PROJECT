@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { ThumbsUp, ShieldCheck, Camera, MapPin } from "lucide-react";
+import { ThumbsUp, ShieldCheck, Camera, MapPin, Pencil, Trash2, Loader2 } from "lucide-react";
 import type { Review } from "@/types";
 import { Rating } from "@/components/ui/rating";
 import { formatDate } from "@/lib/utils";
@@ -44,13 +44,19 @@ interface ReviewCardProps {
   destinationName?: string;
   /** Show a compact variant (no photos, truncated body) */
   compact?: boolean;
+  /** Current user authored this review — shows Edit/Delete controls */
+  isOwner?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  deletePending?: boolean;
 }
 
-export function ReviewCard({ review: r, destinationName, compact = false }: ReviewCardProps) {
+export function ReviewCard({ review: r, destinationName, compact = false, isOwner = false, onEdit, onDelete, deletePending = false }: ReviewCardProps) {
   const [helpfulCount, setHelpfulCount] = useState(r.helpful);
   const [hasVoted, setHasVoted]         = useState(false);
   const [voteFlash, setVoteFlash]       = useState(false);
   const [lightboxIdx, setLightboxIdx]   = useState<number | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const { mutate: vote, isPending }     = useVoteHelpful();
 
   useEffect(() => { setHasVoted(getVotedSet().has(r.id)); }, [r.id]);
@@ -107,6 +113,14 @@ export function ReviewCard({ review: r, destinationName, compact = false }: Revi
                   Verified Traveler
                 </span>
               )}
+              {isOwner && r.status !== "approved" && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-semibold text-warning-foreground ring-1 ring-warning/20"
+                  title="Only visible to you until an admin reviews it"
+                >
+                  {r.status === "pending" ? "Pending approval" : "Not approved"}
+                </span>
+              )}
             </div>
             <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
               <time dateTime={r.date} title={formatDate(r.date)}>{relativeTime(r.date)}</time>
@@ -159,7 +173,7 @@ export function ReviewCard({ review: r, destinationName, compact = false }: Revi
           </div>
         )}
 
-        {/* ── Footer: helpful vote ── */}
+        {/* ── Footer: helpful vote + owner actions ── */}
         <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3">
           <button
             onClick={handleVote}
@@ -189,6 +203,49 @@ export function ReviewCard({ review: r, destinationName, compact = false }: Revi
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Camera size={11} /> {photos.length} photo{photos.length > 1 ? "s" : ""}
             </span>
+          )}
+
+          {isOwner && !confirmingDelete && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={onEdit}
+                aria-label="Edit your review"
+                className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <Pencil size={12} /> Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                aria-label="Delete your review"
+                className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-destructive transition hover:bg-destructive/10"
+              >
+                <Trash2 size={12} /> Delete
+              </button>
+            </div>
+          )}
+
+          {isOwner && confirmingDelete && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Delete this review?</span>
+              <button
+                type="button"
+                disabled={deletePending}
+                onClick={onDelete}
+                className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive transition hover:bg-destructive/20 disabled:opacity-60"
+              >
+                {deletePending ? <Loader2 size={12} className="animate-spin" /> : null}
+                Yes, delete
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </button>
+            </div>
           )}
         </div>
       </article>

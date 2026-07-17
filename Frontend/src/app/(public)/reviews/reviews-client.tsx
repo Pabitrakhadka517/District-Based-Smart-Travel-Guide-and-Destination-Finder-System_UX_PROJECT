@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { GalleryUploader } from "@/components/dashboard/image-uploader";
 import { cn } from "@/lib/utils";
-import { useCreateReview, useDestinations } from "@/hooks/use-content";
+import { useCreateReview, useUpdateReview, useDeleteReview, useDestinations, usePlans } from "@/hooks/use-content";
 import { useAuth } from "@/store/auth-store";
 
 /* ── types ───────────────────────────────────────────────────────────────── */
@@ -89,7 +89,24 @@ export function ReviewsClient({ reviews }: { reviews: Review[] }) {
   const { user }     = useAuth();
   const loggedIn     = !!user;
   const createReview = useCreateReview();
+  const updateReview = useUpdateReview();
+  const deleteReview = useDeleteReview();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId]   = useState<string | null>(null);
   const { data: allDestinations = [] } = useDestinations();
+  const { data: myPlans = [] } = usePlans();
+
+  // The backend only allows reviewing a destination that appears in one of the
+  // user's trip plans — filter the picker to match so the form can't promise
+  // something the API will silently reject.
+  const reviewableDestinationIds = useMemo(
+    () => new Set(myPlans.flatMap((p) => p.destinationIds)),
+    [myPlans]
+  );
+  const reviewableDestinations = useMemo(
+    () => allDestinations.filter((d) => reviewableDestinationIds.has(d.id)),
+    [allDestinations, reviewableDestinationIds]
+  );
 
   /* ── list state ── */
   const [list, setList] = useState<Review[]>(reviews);
@@ -138,7 +155,19 @@ export function ReviewsClient({ reviews }: { reviews: Review[] }) {
   /* ── form helpers ── */
   const resetForm = () => {
     setTitle(""); setBody(""); setRating(5); setHoverRating(0);
-    setDestId(""); setPhotos([]); setError(null);
+    setDestId(""); setPhotos([]); setError(null); setEditingId(null);
+  };
+
+  const startEdit = (review: Review) => {
+    setEditingId(review.id);
+    setDestId(review.destinationId);
+    setRating(review.rating);
+    setTitle(review.title);
+    setBody(review.body);
+    setPhotos(review.photos ?? []);
+    setError(null);
+    setSuccess(false);
+    setFormOpen(true);
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -148,19 +177,42 @@ export function ReviewsClient({ reviews }: { reviews: Review[] }) {
     if (body.trim().length < 20) { setError("Review must be at least 20 characters."); return; }
 
     try {
-      const created = await createReview.mutateAsync({
-        destinationId,
-        rating,
-        title: title.trim(),
-        body: body.trim(),
-        photos: photos.length > 0 ? photos : undefined,
-      });
-      setList([created, ...list]);
+      if (editingId) {
+        const updated = await updateReview.mutateAsync({
+          id: editingId,
+          rating,
+          title: title.trim(),
+          body: body.trim(),
+          photos,
+        });
+        setList((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+      } else {
+        const created = await createReview.mutateAsync({
+          destinationId,
+          rating,
+          title: title.trim(),
+          body: body.trim(),
+          photos: photos.length > 0 ? photos : undefined,
+        });
+        setList([created, ...list]);
+      }
       setSuccess(true);
       setFormOpen(false);
       resetForm();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit. Please try again.");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteReview.mutateAsync(id);
+      setList((prev) => prev.filter((r) => r.id !== id));
+    } catch {
+      // Leave the review in place on failure — the card's confirm UI stays open so the user can retry.
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -284,7 +336,9 @@ export function ReviewsClient({ reviews }: { reviews: Review[] }) {
           className="space-y-5 rounded-2xl border border-border bg-white p-6 shadow-soft"
         >
           <div className="flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold text-brand-600">Share your experience</h3>
+            <h3 className="font-display text-lg font-semibold text-brand-600">
+              {editingId ? "Edit your review" : "Share your experience"}
+            </h3>
             <button type="button" onClick={() => { setFormOpen(false); resetForm(); }}
               className="text-muted-foreground hover:text-foreground transition">
               <X size={18} />
@@ -327,15 +381,30 @@ export function ReviewsClient({ reviews }: { reviews: Review[] }) {
               <select
                 id="dest-pick"
                 required
+                disabled={!!editingId || reviewableDestinations.length === 0}
                 value={destinationId}
                 onChange={(e) => setDestId(e.target.value)}
-                className="h-10 w-full rounded-xl border border-border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                className="h-10 w-full rounded-xl border border-border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <option value="">Select a destination…</option>
-                {allDestinations.map((d) => (
+                <option value="">
+                  {reviewableDestinations.length === 0 ? "No destinations to review yet" : "Select a destination…"}
+                </option>
+                {/* While editing, the destination came from an existing review and may no longer
+                    be in the current reviewable set — include it so the select has a valid value. */}
+                {editingId && !reviewableDestinations.some((d) => d.id === destinationId) && (
+                  <option value={destinationId}>{destName(destinationId)}</option>
+                )}
+                {reviewableDestinations.map((d) => (
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
+              {!editingId && reviewableDestinations.length === 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  You can only review destinations from one of your{" "}
+                  <Link href="/planner" className="underline hover:text-secondary">trip plans</Link>.
+                  Add a destination to a trip first.
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="rev-title" className="mb-1 block">Title</Label>
@@ -388,17 +457,19 @@ export function ReviewsClient({ reviews }: { reviews: Review[] }) {
           {error && <Alert variant="error">{error}</Alert>}
 
           <div className="flex items-center gap-3">
-            <Button type="submit" variant="accent" disabled={createReview.isPending}>
-              {createReview.isPending
-                ? <><Loader2 size={14} className="animate-spin" /> Submitting…</>
-                : "Submit review"}
+            <Button type="submit" variant="accent" disabled={createReview.isPending || updateReview.isPending}>
+              {createReview.isPending || updateReview.isPending
+                ? <><Loader2 size={14} className="animate-spin" /> {editingId ? "Saving…" : "Submitting…"}</>
+                : editingId ? "Save changes" : "Submit review"}
             </Button>
             <Button type="button" variant="ghost" onClick={() => { setFormOpen(false); resetForm(); }}>
               Cancel
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Reviews are moderated before appearing publicly. Thank you for contributing!
+            {editingId
+              ? "Editing re-queues your review for moderation before it's visible again."
+              : "Reviews are moderated before appearing publicly. Thank you for contributing!"}
           </p>
         </form>
       )}
@@ -525,6 +596,10 @@ export function ReviewsClient({ reviews }: { reviews: Review[] }) {
               key={r.id}
               review={r}
               destinationName={destName(r.destinationId)}
+              isOwner={!!user && r.userId === user.id}
+              onEdit={() => startEdit(r)}
+              onDelete={() => handleDelete(r.id)}
+              deletePending={deletingId === r.id}
             />
           ))}
         </div>

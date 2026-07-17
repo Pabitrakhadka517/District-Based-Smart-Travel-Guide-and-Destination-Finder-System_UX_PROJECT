@@ -17,9 +17,17 @@ declare global {
   }
 }
 
+// The browser frontend relies on the httpOnly cookie (never touches the token
+// via JS, so it can't be exfiltrated through an XSS bug); the Authorization
+// header stays supported as a fallback so non-browser API clients (Swagger
+// UI's "Authorize" dialog, curl, mobile clients) keep working exactly as before.
+export const ACCESS_COOKIE = "nepalyatra_at";
+
 function readToken(req: Request): string | null {
   const header = req.headers.authorization;
   if (header?.startsWith("Bearer ")) return header.slice(7);
+  const cookieToken = req.cookies?.[ACCESS_COOKIE] as string | undefined;
+  if (cookieToken) return cookieToken;
   return null;
 }
 

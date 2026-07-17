@@ -42,7 +42,7 @@ export const listReviews = asyncHandler(async (req: Request, res: Response) => {
 
   const { page, limit, skip } = parsePagination(req.query, 200);
   const [result, total] = await Promise.all([
-    Review.find(filter).sort({ date: -1 }).skip(skip).limit(limit),
+    Review.find(filter).sort({ date: -1 }).skip(skip).limit(limit).lean(),
     Review.countDocuments(filter)
   ]);
   okPaginated(res, result, total, page, limit);
@@ -54,7 +54,7 @@ export const createReview = asyncHandler(async (req: Request, res: Response) => 
   if (!body.destinationId) return fail(res, "destinationId is required", 400);
 
   const rating = Number(body.rating);
-  if (!rating || rating < 1 || rating > 5) {
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     return fail(res, "rating must be an integer between 1 and 5", 400);
   }
 
@@ -62,7 +62,7 @@ export const createReview = asyncHandler(async (req: Request, res: Response) => 
   const destinationId = String(body.destinationId);
 
   // Prevent duplicate reviews from the same user
-  const existing = await Review.findOne({ destinationId, userId });
+  const existing = await Review.exists({ destinationId, userId });
   if (existing) return fail(res, "You have already submitted a review for this destination", 409);
 
   // Only users who have this destination in one of their trip plans may review it
@@ -75,7 +75,7 @@ export const createReview = asyncHandler(async (req: Request, res: Response) => 
   const photos = sanitizeGallery(body.photos, 5);
 
   // Use the authenticated user's real name and avatar — never trust client-supplied values
-  const reviewer = await User.findOne({ id: userId });
+  const reviewer = await User.findOne({ id: userId }).select("name avatar").lean();
 
   const created = await Review.create({
     id:               genId("r"),
@@ -96,6 +96,41 @@ export const createReview = asyncHandler(async (req: Request, res: Response) => 
   ok(res, created, 201);
 });
 
+// PATCH /api/reviews/:id  (requireAuth — author only)
+// Editing content re-queues the review for moderation, since the previously
+// approved text/rating no longer reflects what's actually stored.
+export const updateReview = asyncHandler(async (req: Request, res: Response) => {
+  const review = await Review.findOne({ id: req.params.id }).select("userId destinationId").lean();
+  if (!review) return fail(res, "Review not found", 404);
+  if (review.userId !== req.auth!.sub) {
+    return fail(res, "You can only edit your own reviews", 403);
+  }
+
+  const body = req.body ?? {};
+  const update: Record<string, unknown> = { status: "pending" };
+
+  if (body.rating !== undefined) {
+    const rating = Number(body.rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return fail(res, "rating must be an integer between 1 and 5", 400);
+    }
+    update.rating = rating;
+  }
+  if (body.title !== undefined) {
+    update.title = typeof body.title === "string" ? body.title.trim().slice(0, 200) : "";
+  }
+  if (body.body !== undefined) {
+    update.body = typeof body.body === "string" ? body.body.trim().slice(0, 5000) : "";
+  }
+  if (body.photos !== undefined) {
+    update.photos = sanitizeGallery(body.photos, 5);
+  }
+
+  const updated = await Review.findOneAndUpdate({ id: req.params.id }, update, { new: true, runValidators: true }).lean();
+  await recomputeDestinationRating(review.destinationId);
+  ok(res, updated);
+});
+
 // PATCH /api/reviews/:id/status  { status }  (admin)
 export const moderateReview = asyncHandler(async (req: Request, res: Response) => {
   const { status } = req.body ?? {};
@@ -103,31 +138,49 @@ export const moderateReview = asyncHandler(async (req: Request, res: Response) =
     return fail(res, "status must be approved, pending or rejected", 400);
   }
 
-  const review = await Review.findOneAndUpdate({ id: req.params.id }, { status }, { new: true });
+  const review = await Review.findOneAndUpdate({ id: req.params.id }, { status }, { new: true }).lean();
   if (!review) return fail(res, "Review not found", 404);
 
   await recomputeDestinationRating(review.destinationId);
   ok(res, review);
 });
 
-// DELETE /api/reviews/:id  (admin)
+// DELETE /api/reviews/:id  (requireAuth — author or admin)
 export const deleteReview = asyncHandler(async (req: Request, res: Response) => {
-  const review = await Review.findOneAndDelete({ id: req.params.id });
+  const review = await Review.findOne({ id: req.params.id }).select("userId destinationId").lean();
   if (!review) return fail(res, "Review not found", 404);
+
+  const isOwner = review.userId === req.auth!.sub;
+  const isAdmin = req.auth!.role === "admin";
+  if (!isOwner && !isAdmin) {
+    return fail(res, "You can only delete your own reviews", 403);
+  }
+
+  await Review.deleteOne({ id: req.params.id });
   await recomputeDestinationRating(review.destinationId);
   ok(res, { id: req.params.id, deleted: true });
 });
 
 // POST /api/reviews/:id/helpful  (requireAuth)
-// Double-vote prevention is handled on the frontend via localStorage.
+// One vote per user, enforced atomically server-side via helpfulVoterIds —
+// the filter only matches (and only then increments) if this user hasn't
+// already voted, so a scripted repeat request can't inflate the count.
 export const voteHelpful = asyncHandler(async (req: Request, res: Response) => {
-  const review = await Review.findOneAndUpdate(
-    { id: req.params.id },
-    { $inc: { helpful: 1 } },
+  const userId = req.auth!.sub;
+
+  const updated = await Review.findOneAndUpdate(
+    { id: req.params.id, helpfulVoterIds: { $ne: userId } },
+    { $addToSet: { helpfulVoterIds: userId }, $inc: { helpful: 1 } },
     { new: true }
-  );
-  if (!review) return fail(res, "Review not found", 404);
-  ok(res, { helpful: review.helpful });
+  ).select("helpful").lean();
+
+  if (updated) return ok(res, { helpful: updated.helpful });
+
+  // Either the review doesn't exist, or this user already voted — either way,
+  // no new vote is recorded; just report the current count if it exists.
+  const existing = await Review.findOne({ id: req.params.id }).select("helpful").lean();
+  if (!existing) return fail(res, "Review not found", 404);
+  ok(res, { helpful: existing.helpful });
 });
 
 // Uses aggregation instead of fetching full documents — O(n) → O(1) DB work

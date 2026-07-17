@@ -54,6 +54,42 @@ const emailHtml = (title: string, body: string, buttonText: string, buttonUrl: s
 </body>
 </html>`;
 
+export async function sendContactNotificationEmail(
+  fromName: string,
+  fromEmail: string,
+  subject: string,
+  message: string
+): Promise<void> {
+  if (!env.contactEmail) return; // no destination configured — message is still persisted to the DB
+  await send(
+    env.contactEmail,
+    `[Contact] ${subject}`,
+    `<p><strong>From:</strong> ${fromName} (${fromEmail})</p><p><strong>Message:</strong></p><p>${message.replace(/\n/g, "<br>")}</p>`
+  );
+}
+
+export async function sendBookingStatusEmail(
+  to: string,
+  name: string,
+  destinationName: string,
+  travelDate: string,
+  status: "confirmed" | "cancelled"
+): Promise<void> {
+  const isConfirmed = status === "confirmed";
+  await send(
+    to,
+    isConfirmed ? `Your booking for ${destinationName} is confirmed` : `Your booking for ${destinationName} was cancelled`,
+    emailHtml(
+      isConfirmed ? `Good news, ${name}!` : `Booking update, ${name}`,
+      isConfirmed
+        ? `Your booking for <strong>${destinationName}</strong> on <strong>${travelDate}</strong> has been confirmed. We can't wait for you to explore Nepal!`
+        : `Your booking for <strong>${destinationName}</strong> on <strong>${travelDate}</strong> has been cancelled. If you think this is a mistake, please get in touch.`,
+      "View my bookings",
+      `${env.frontendUrl}/booking`
+    )
+  );
+}
+
 export async function sendPasswordResetEmail(to: string, name: string, token: string): Promise<void> {
   const url = `${env.frontendUrl}/reset-password?token=${token}`;
   await send(

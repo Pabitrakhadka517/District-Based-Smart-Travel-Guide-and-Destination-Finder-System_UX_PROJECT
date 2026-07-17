@@ -35,6 +35,7 @@ export const env = {
   emailUser: process.env.EMAIL_USER ?? "",
   emailPass: process.env.EMAIL_PASS ?? "",
   emailFrom: process.env.EMAIL_FROM ?? "NepalYatra <noreply@nepalyatra.com>",
+  contactEmail: process.env.CONTACT_EMAIL ?? process.env.EMAIL_USER ?? "",
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME ?? "",
   cloudinaryApiKey: process.env.CLOUDINARY_API_KEY ?? "",

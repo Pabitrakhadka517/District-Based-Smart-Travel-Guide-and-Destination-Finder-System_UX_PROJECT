@@ -5,7 +5,7 @@ import { AdminTable, type Column } from "@/components/dashboard/admin-table";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { apiGet, apiPatch, apiDelete } from "@/services/api-client";
+import { apiGetPaginated, apiPatch, apiDelete } from "@/services/api-client";
 import { useDestinations } from "@/hooks/use-content";
 import type { Booking } from "@/types";
 
@@ -27,6 +27,7 @@ const STATUS_BADGE: Record<Booking["status"], "success" | "accent" | "outline"> 
 
 export function BookingsAdmin() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -40,8 +41,12 @@ export function BookingsAdmin() {
   }, [destinations]);
 
   useEffect(() => {
-    apiGet<Booking[]>("/admin/bookings", true)
-      .then(setBookings)
+    // Bookings admin has no server-side pager UI (it filters by status tab
+    // client-side instead), so request a high ceiling in one shot rather than
+    // silently relying on the backend's much smaller default limit — and keep
+    // `total` around so a genuine overflow past 500 is surfaced, not silent.
+    apiGetPaginated<Booking>("/admin/bookings?limit=500", true)
+      .then(({ data, total }) => { setBookings(data); setTotal(total); })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load bookings"))
       .finally(() => setLoading(false));
   }, []);
@@ -177,6 +182,13 @@ export function BookingsAdmin() {
               <X size={14} />
             </button>
           </div>
+        </Alert>
+      )}
+
+      {total > bookings.length && (
+        <Alert variant="warning">
+          Showing the most recent {bookings.length.toLocaleString()} of {total.toLocaleString()} total bookings.
+          Narrow your search or status filter to find older ones.
         </Alert>
       )}
 

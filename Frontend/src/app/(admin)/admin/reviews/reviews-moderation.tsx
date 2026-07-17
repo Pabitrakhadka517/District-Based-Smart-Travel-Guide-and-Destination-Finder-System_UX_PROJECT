@@ -28,6 +28,7 @@ export function ReviewsModeration() {
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
   const [sortBy,       setSortBy]       = useState<SortKey>("newest");
   const [selected,     setSelected]     = useState<Set<string>>(new Set());
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     apiGet<Review[]>("/reviews", true)
@@ -54,18 +55,27 @@ export function ReviewsModeration() {
       setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to delete review");
+    } finally {
+      setConfirmDeleteId(null);
     }
   };
 
   const bulkSetStatus = async (status: Review["status"]) => {
     const ids = Array.from(selected);
     setError(null);
-    try {
-      await Promise.all(ids.map((id) => apiPatch(`/reviews/${id}/status`, { status })));
-      setReviews((prev) => prev.map((r) => ids.includes(r.id) ? { ...r, status } : r));
-      setSelected(new Set());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update selected reviews");
+    const results = await Promise.allSettled(ids.map((id) => apiPatch(`/reviews/${id}/status`, { status })));
+    const succeeded = new Set(ids.filter((_, i) => results[i].status === "fulfilled"));
+    if (succeeded.size > 0) {
+      setReviews((prev) => prev.map((r) => succeeded.has(r.id) ? { ...r, status } : r));
+    }
+    setSelected((prev) => new Set([...prev].filter((id) => !succeeded.has(id))));
+    const failed = ids.length - succeeded.size;
+    if (failed > 0) {
+      setError(
+        succeeded.size > 0
+          ? `Updated ${succeeded.size} of ${ids.length} reviews — ${failed} failed. Still-selected reviews can be retried.`
+          : `Failed to update the selected review${ids.length > 1 ? "s" : ""}.`
+      );
     }
   };
 
@@ -331,31 +341,49 @@ export function ReviewsModeration() {
               </div>
 
               {/* Actions */}
-              <div className="flex shrink-0 gap-1.5">
-                <button
-                  onClick={() => setStatus(r.id, "approved")}
-                  aria-label={`Approve review by ${r.author}`}
-                  disabled={r.status === "approved"}
-                  className="grid h-9 w-9 place-items-center rounded-lg bg-success/10 text-success transition hover:bg-success/20 disabled:opacity-30"
-                >
-                  <Check size={16} />
-                </button>
-                <button
-                  onClick={() => setStatus(r.id, "rejected")}
-                  aria-label={`Reject review by ${r.author}`}
-                  disabled={r.status === "rejected"}
-                  className="grid h-9 w-9 place-items-center rounded-lg bg-accent/10 text-accent transition hover:bg-accent/20 disabled:opacity-30"
-                >
-                  <X size={16} />
-                </button>
-                <button
-                  onClick={() => remove(r.id)}
-                  aria-label={`Delete review by ${r.author}`}
-                  className="grid h-9 w-9 place-items-center rounded-lg bg-destructive/10 text-destructive transition hover:bg-destructive/20"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
+              {confirmDeleteId === r.id ? (
+                <div className="flex shrink-0 items-center gap-2 rounded-lg bg-destructive/5 px-2.5 py-1.5">
+                  <span className="text-xs text-destructive">Delete?</span>
+                  <button
+                    onClick={() => remove(r.id)}
+                    className="rounded-md bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive transition hover:bg-destructive/20"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteId(null)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex shrink-0 gap-1.5">
+                  <button
+                    onClick={() => setStatus(r.id, "approved")}
+                    aria-label={`Approve review by ${r.author}`}
+                    disabled={r.status === "approved"}
+                    className="grid h-9 w-9 place-items-center rounded-lg bg-success/10 text-success transition hover:bg-success/20 disabled:opacity-30"
+                  >
+                    <Check size={16} />
+                  </button>
+                  <button
+                    onClick={() => setStatus(r.id, "rejected")}
+                    aria-label={`Reject review by ${r.author}`}
+                    disabled={r.status === "rejected"}
+                    className="grid h-9 w-9 place-items-center rounded-lg bg-accent/10 text-accent transition hover:bg-accent/20 disabled:opacity-30"
+                  >
+                    <X size={16} />
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteId(r.id)}
+                    aria-label={`Delete review by ${r.author}`}
+                    className="grid h-9 w-9 place-items-center rounded-lg bg-destructive/10 text-destructive transition hover:bg-destructive/20"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

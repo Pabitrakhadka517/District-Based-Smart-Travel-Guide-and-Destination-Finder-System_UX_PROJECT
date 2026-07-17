@@ -166,6 +166,7 @@ export const openapiSpec = {
     { name: "Reviews",      description: "Traveller reviews for destinations" },
     { name: "Search",       description: "Cross-content full-text search with filters, sorting and pagination" },
     { name: "Recommendations", description: "Personalized, similar-item and trending destination recommendations" },
+    { name: "Contact",      description: "Public contact form submission" },
     { name: "Travel Alerts",description: "Admin-managed travel advisories shown on the weather page" },
     { name: "Checklists",   description: "Admin-managed packing checklists, one per destination category" },
     { name: "Planner",      description: "Personal trip planner (requires auth)" },
@@ -785,9 +786,11 @@ export const openapiSpec = {
 
       WishlistResponse: {
         type: "object",
+        description: "`ids` can reference either Destinations or Attractions — both are resolved and returned separately.",
         properties: {
-          ids:          { type: "array", items: { type: "string" }, example: ["p1", "p5"] },
-          destinations: arrayOf("Destination")
+          ids:          { type: "array", items: { type: "string" }, example: ["p1", "a3"] },
+          destinations: arrayOf("Destination"),
+          attractions:  arrayOf("TouristAttraction")
         }
       },
 
@@ -902,7 +905,7 @@ export const openapiSpec = {
           "**Validation rules:**",
           "- `name` — required, minimum 2 characters",
           "- `email` — required, valid email format, must be unique",
-          "- `password` — required, minimum 8 characters"
+          "- `password` — required, minimum 8 characters, plus at least one of: uppercase letter, number, symbol"
         ].join("\n"),
         operationId: "register",
         requestBody: {
@@ -985,6 +988,7 @@ export const openapiSpec = {
         description: [
           "The browser/client must send the `nepalyatra_rt` cookie (set automatically by the login response).",
           "The old refresh token is invalidated and a new one is issued — **token rotation** prevents replay attacks.",
+          "Replaying an already-rotated token is treated as a signal of theft: every refresh token for that account is revoked, forcing a fresh login everywhere.",
           "Returns a fresh access token and updated user object."
         ].join("\n"),
         operationId: "refresh",
@@ -1077,7 +1081,7 @@ export const openapiSpec = {
           "Verifies `currentPassword`, then replaces it with `newPassword`.",
           "**Side effect:** All refresh tokens (including the caller's own) are invalidated — the user is logged out everywhere and must log in again.",
           "",
-          "**Rules:** `newPassword` must be at least 8 characters."
+          "**Rules:** `newPassword` must be at least 8 characters, plus at least one of: uppercase letter, number, symbol."
         ].join("\n"),
         operationId: "changePassword",
         security: bearerSec,
@@ -1137,7 +1141,7 @@ export const openapiSpec = {
       post: {
         tags: ["Auth"],
         summary: "Reset password using a reset token",
-        description: "Consumes the one-time reset token (valid 30 min) obtained from the reset email. On success all existing sessions are terminated.",
+        description: "Consumes the one-time reset token (valid 30 min) obtained from the reset email. On success all existing sessions are terminated. `password` must be at least 8 characters, plus at least one of: uppercase letter, number, symbol.",
         operationId: "resetPassword",
         requestBody: {
           required: true,
@@ -1784,9 +1788,37 @@ export const openapiSpec = {
     },
 
     "/reviews/{id}": {
+      patch: {
+        tags: ["Reviews"],
+        summary: "Edit your own review",
+        description: "Author only (403 otherwise). Editing content resets `status` back to `pending` so the updated review is re-moderated before it's shown publicly again; also recalculates the parent destination's aggregate rating.",
+        operationId: "updateReview",
+        security: bearerSec,
+        parameters: [pathParam("id", "Review ID", "r1")],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  rating: { type: "integer", minimum: 1, maximum: 5, example: 4 },
+                  title:  { type: "string", maxLength: 200, example: "Updated: still great, but crowded in peak season" },
+                  body:   { type: "string", maxLength: 5000 },
+                  photos: { type: "array", items: $ref("Image"), maxItems: 5 }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          ...jsonResponse("Updated review (now pending re-approval).", $ref("Review")),
+          400: r400, 401: r401, 403: r403, 404: r404
+        }
+      },
       delete: {
         tags: ["Reviews"],
-        summary: "Delete a review *(admin)*",
+        summary: "Delete a review *(author or admin)*",
         description: "Also recalculates the parent destination's aggregate rating and reviewCount.",
         operationId: "deleteReview",
         security: bearerSec,
@@ -1802,7 +1834,7 @@ export const openapiSpec = {
       post: {
         tags: ["Reviews"],
         summary: "Upvote a review as helpful",
-        description: "Atomically increments the review's `helpful` counter by 1. Double-vote prevention is handled client-side (localStorage), not enforced server-side.",
+        description: "Atomically increments the review's `helpful` counter by 1 — one vote per authenticated user, enforced server-side (a repeat call from the same user is a no-op that just returns the current count).",
         operationId: "voteHelpful",
         security: bearerSec,
         parameters: [pathParam("id", "Review ID", "r1")],
@@ -1912,6 +1944,37 @@ export const openapiSpec = {
     // ══════════════════════════════════════════════════════════════════════
     // TRAVEL ALERTS
     // ══════════════════════════════════════════════════════════════════════
+
+    "/contact": {
+      post: {
+        tags: ["Contact"],
+        summary: "Submit a contact form message",
+        description: "Public endpoint. The message is stored and a best-effort notification email is sent to the site's configured contact address.",
+        operationId: "submitContactMessage",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["name", "email", "subject", "message"],
+                properties: {
+                  name: { type: "string", example: "Aayusha Rai" },
+                  email: { type: "string", format: "email", example: "aayusha@example.com" },
+                  subject: { type: "string", example: "Question about the Everest trek" },
+                  message: { type: "string", example: "Hi, I'd like to know the best season to..." }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          ...jsonResponse("Message received.", { type: "object", properties: { id: { type: "string", example: "cm1a2b3c4d5e6f7g8" } } }, 201),
+          400: r400,
+          500: r500
+        }
+      }
+    },
 
     "/travel-alerts": {
       get: {
@@ -2107,7 +2170,7 @@ export const openapiSpec = {
       post: {
         tags: ["Bookings"],
         summary: "Create a booking",
-        description: "`estimatedCost` is always computed server-side as `travelers × (accommodation rate + transport rate)` — any client-supplied value is ignored. `travelDate` must be today or later.",
+        description: "`estimatedCost` is always computed server-side as `travelers × (accommodation rate + transport rate)` — any client-supplied value is ignored. `travelDate` must be today or later. A second non-cancelled booking for the same destination within 7 days of an existing one is rejected (409) — edit or cancel the existing booking instead.",
         operationId: "createBooking",
         security: bearerSec,
         requestBody: {
@@ -2134,7 +2197,7 @@ export const openapiSpec = {
           ...jsonResponse("Booking created with status 'pending'.", $ref("Booking"), 201),
           400: r400, 401: r401, 404: r404,
           409: {
-            description: "409 Conflict — you already have a non-cancelled booking for this destination and travel date",
+            description: "409 Conflict — you already have a non-cancelled booking for this destination within 7 days of this travel date",
             content: { "application/json": { schema: $ref("Error") } }
           }
         }
@@ -2205,7 +2268,7 @@ export const openapiSpec = {
       patch: {
         tags: ["Bookings"],
         summary: "Update any booking's status *(admin)*",
-        description: "The only way a booking can be moved to `confirmed`.",
+        description: "The only way a booking can be moved to `confirmed`. Transitioning to `confirmed` or `cancelled` sends the traveler a best-effort notification email.",
         operationId: "adminUpdateBookingStatus",
         security: bearerSec,
         parameters: [pathParam("id", "Booking ID", "bk1")],
@@ -2247,18 +2310,18 @@ export const openapiSpec = {
       get: {
         tags: ["Wishlist"],
         summary: "Get the authenticated user's wishlist",
-        description: "Self-heals: if a wishlisted destination was since deleted, its id is silently dropped from the stored list on read.",
+        description: "Items can be Destinations or Attractions. Self-heals: if a wishlisted item was since deleted, its id is silently dropped from the stored list on read.",
         operationId: "getWishlist",
         security: bearerSec,
         responses: {
-          ...jsonResponse("Wishlist with resolved destination objects.", $ref("WishlistResponse")),
+          ...jsonResponse("Wishlist with resolved destination and attraction objects.", $ref("WishlistResponse")),
           401: r401
         }
       },
       post: {
         tags: ["Wishlist"],
-        summary: "Add a destination to the wishlist",
-        description: "Uses MongoDB `$addToSet` — duplicate additions are silently ignored. Capped at 500 destinations per user.",
+        summary: "Add a destination or attraction to the wishlist",
+        description: "`destinationId` accepts either a Destination or an Attraction id (field name kept for backward compatibility). Uses MongoDB `$addToSet` — duplicate additions are silently ignored. Capped at 500 items per user.",
         operationId: "addToWishlist",
         security: bearerSec,
         requestBody: {
@@ -2268,7 +2331,7 @@ export const openapiSpec = {
               schema: {
                 type: "object",
                 required: ["destinationId"],
-                properties: { destinationId: { type: "string", example: "p1" } }
+                properties: { destinationId: { type: "string", example: "p1", description: "A Destination or Attraction id" } }
               }
             }
           }
@@ -2283,7 +2346,7 @@ export const openapiSpec = {
     "/wishlist/{destinationId}": {
       delete: {
         tags: ["Wishlist"],
-        summary: "Remove a destination from the wishlist",
+        summary: "Remove a destination or attraction from the wishlist",
         operationId: "removeFromWishlist",
         security: bearerSec,
         parameters: [pathParam("destinationId", "Destination ID to remove", "p1")],

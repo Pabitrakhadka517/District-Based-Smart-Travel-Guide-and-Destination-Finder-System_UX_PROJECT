@@ -19,7 +19,7 @@ const DATE_RE        = /^\d{4}-\d{2}-\d{2}$/;
 
 // GET /api/planner  (auth) → TripPlan[] for the current user
 export const listTrips = asyncHandler(async (req: Request, res: Response) => {
-  const trips = await TripPlan.find({ userId: req.auth!.sub }).sort({ startDate: 1 });
+  const trips = await TripPlan.find({ userId: req.auth!.sub }).sort({ startDate: 1 }).lean();
   ok(res, trips);
 });
 
@@ -32,6 +32,8 @@ export const createTrip = asyncHandler(async (req: Request, res: Response) => {
     return fail(res, "startDate must be YYYY-MM-DD", 400);
   if (body.endDate && !DATE_RE.test(String(body.endDate)))
     return fail(res, "endDate must be YYYY-MM-DD", 400);
+  if (body.startDate && body.endDate && String(body.endDate) < String(body.startDate))
+    return fail(res, "endDate cannot be before startDate", 400);
   if (body.status && !VALID_STATUSES.includes(String(body.status)))
     return fail(res, `status must be one of: ${VALID_STATUSES.join(", ")}`, 400);
   if (body.travelType && !VALID_TYPES.includes(String(body.travelType)))
@@ -78,9 +80,27 @@ export const updateTrip = asyncHandler(async (req: Request, res: Response) => {
   if (body.travelType && !VALID_TYPES.includes(String(body.travelType)))
     return fail(res, `travelType must be one of: ${VALID_TYPES.join(", ")}`, 400);
 
-  const existing = body.photos !== undefined
-    ? await TripPlan.findOne({ id: req.params.id, userId: req.auth!.sub }).select("photos")
+  const needsExisting =
+    body.photos !== undefined || body.startDate !== undefined || body.endDate !== undefined || body.status !== undefined;
+  const existing = needsExisting
+    ? await TripPlan.findOne({ id: req.params.id, userId: req.auth!.sub }).select("photos startDate endDate status").lean()
     : null;
+
+  if (body.startDate !== undefined || body.endDate !== undefined) {
+    if (!existing) return fail(res, "Trip not found", 404);
+    const effectiveStart = body.startDate !== undefined ? String(body.startDate) : existing.startDate;
+    const effectiveEnd   = body.endDate   !== undefined ? String(body.endDate)   : existing.endDate;
+    if (effectiveStart && effectiveEnd && effectiveEnd < effectiveStart)
+      return fail(res, "endDate cannot be before startDate", 400);
+  }
+
+  // A completed trip's status is locked — Tracking and Planner both write this
+  // same field from separate UIs, and without this a trip could silently
+  // un-complete itself (e.g. opening it in the Planner workspace resets the
+  // status dropdown to draft/planned/ready).
+  if (body.status !== undefined && existing?.status === "completed" && body.status !== "completed") {
+    return fail(res, "A completed trip's status can't be changed", 400);
+  }
 
   const trip = await TripPlan.findOneAndUpdate(
     { id: req.params.id, userId: req.auth!.sub },
@@ -88,7 +108,7 @@ export const updateTrip = asyncHandler(async (req: Request, res: Response) => {
     { new: true, runValidators: true }
   );
   if (!trip) return fail(res, "Trip not found", 404);
-  if (existing) cleanupReplacedImages([existing.photos], [trip.photos]);
+  if (existing && body.photos !== undefined) cleanupReplacedImages([existing.photos], [trip.photos]);
   ok(res, trip);
 });
 

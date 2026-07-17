@@ -172,6 +172,19 @@ export function useCreateReview() {
   });
 }
 
+export function useUpdateReview() {
+  return useMutation({
+    mutationFn: ({ id, ...payload }: { id: string } & Partial<Pick<Review, "rating" | "title" | "body" | "photos">>) =>
+      reviewService.update(id, payload),
+  });
+}
+
+export function useDeleteReview() {
+  return useMutation({
+    mutationFn: (id: string) => reviewService.remove(id),
+  });
+}
+
 /* ----------------------------- Wishlist --------------------------------- */
 
 export function useWishlistApi() {
@@ -354,7 +367,7 @@ export function useAdminAnalytics() {
 /* ----------------------------- Recommendations -------------------------- */
 
 export function usePersonalizedRecommendations() {
-  const loggedIn = useAuth((s) => !!s.token);
+  const loggedIn = useAuth((s) => !!s.user);
   const [viewedIds, setViewedIds] = useState<string[]>([]);
   useEffect(() => {
     try {

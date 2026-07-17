@@ -9,13 +9,13 @@ const CHECKLIST_FIELDS = ["category", "items"];
 
 // GET /api/checklists
 export const listPackingChecklists = asyncHandler(async (_req: Request, res: Response) => {
-  const checklists = await PackingChecklist.find().sort({ category: 1 });
+  const checklists = await PackingChecklist.find().sort({ category: 1 }).lean();
   ok(res, checklists);
 });
 
 // GET /api/checklists/:category
 export const getPackingChecklist = asyncHandler(async (req: Request, res: Response) => {
-  const checklist = await PackingChecklist.findOne({ category: req.params.category });
+  const checklist = await PackingChecklist.findOne({ category: req.params.category }).lean();
   if (!checklist) return fail(res, "Checklist not found", 404);
   ok(res, checklist);
 });

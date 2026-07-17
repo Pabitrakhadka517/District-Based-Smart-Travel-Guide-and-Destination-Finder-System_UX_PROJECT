@@ -56,6 +56,9 @@ export interface IReview {
   helpful: number; status: "approved" | "pending" | "rejected";
   photos?: IImage[];
   verifiedTraveler?: boolean;
+  // Ids of users who've upvoted this review as helpful — enforces one vote
+  // per user server-side (double-vote prevention used to be client-only).
+  helpfulVoterIds?: string[];
 }
 
 export interface ITrekDay { day: number; title: string; detail: string; altitude: number; hours: string; }
@@ -127,6 +130,15 @@ export interface IPackingChecklist {
   id: string;
   category: string; // one entry per Category value, e.g. "Trekking"
   items: string[];
+}
+
+export interface IContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  createdAt: Date;
 }
 
 export interface IAuditLog {

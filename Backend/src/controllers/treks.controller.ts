@@ -29,7 +29,7 @@ export const listTreks = asyncHandler(async (req: Request, res: Response) => {
 
   const { page, limit, skip } = parsePagination(req.query, 100);
   const [result, total] = await Promise.all([
-    Trek.find(filter).sort({ rating: -1 }).skip(skip).limit(limit),
+    Trek.find(filter).sort({ rating: -1 }).skip(skip).limit(limit).lean(),
     Trek.countDocuments(filter)
   ]);
   okPaginated(res, result, total, page, limit);
@@ -37,12 +37,14 @@ export const listTreks = asyncHandler(async (req: Request, res: Response) => {
 
 // GET /api/treks/:slug
 export const getTrek = asyncHandler(async (req: Request, res: Response) => {
-  const trek = await Trek.findOne({ slug: req.params.slug });
+  const trek = await Trek.findOne({ slug: req.params.slug }).lean();
   if (!trek) return fail(res, "Trek not found", 404);
   ok(res, trek);
 });
 
 // --- Admin CRUD ---
+// No onDeleted cascade needed: nothing else in the schema references a Trek by
+// id (it only points outward at districtIds, never the other way round).
 
 const crud = makeAdminCrud(Trek, {
   fields: TREK_FIELDS,

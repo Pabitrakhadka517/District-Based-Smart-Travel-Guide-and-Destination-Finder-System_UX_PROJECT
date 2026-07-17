@@ -13,14 +13,14 @@ export const getUserActivity = asyncHandler(async (req: Request, res: Response) 
   const userId = (req as Request & { auth?: { sub: string } }).auth!.sub;
 
   const [plans, reviews] = await Promise.all([
-    TripPlan.find({ userId }).sort({ startDate: -1 }).limit(20),
-    Review.find({ userId }).sort({ date: -1 }).limit(10),
+    TripPlan.find({ userId }).sort({ startDate: -1 }).limit(20).lean(),
+    Review.find({ userId }).sort({ date: -1 }).limit(10).lean(),
   ]);
 
   // Resolve destination names for reviews
   const reviewDestIds = [...new Set(reviews.map((r) => r.destinationId as string))];
   const destDocs = reviewDestIds.length
-    ? await Destination.find({ id: { $in: reviewDestIds } }).select("id name slug")
+    ? await Destination.find({ id: { $in: reviewDestIds } }).select("id name slug").lean()
     : [];
   const destMap = new Map(
     (destDocs as Array<{ id: string; name: string; slug: string }>).map((d) => [

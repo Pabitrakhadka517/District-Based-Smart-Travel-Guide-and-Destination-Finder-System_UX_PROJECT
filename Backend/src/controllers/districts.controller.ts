@@ -24,7 +24,7 @@ export const listDistricts = asyncHandler(async (req: Request, res: Response) =>
   // Sort by province then name for consistent, meaningful ordering
   const { page, limit, skip } = parsePagination(req.query, 100);
   const [districts, total] = await Promise.all([
-    District.find().sort({ province: 1, name: 1 }).skip(skip).limit(limit),
+    District.find().sort({ province: 1, name: 1 }).skip(skip).limit(limit).lean(),
     District.countDocuments()
   ]);
   okPaginated(res, districts, total, page, limit);
@@ -32,28 +32,29 @@ export const listDistricts = asyncHandler(async (req: Request, res: Response) =>
 
 // GET /api/districts/:slug -> full district tourism hub payload
 export const getDistrict = asyncHandler(async (req: Request, res: Response) => {
-  const district = await District.findOne({ slug: req.params.slug });
+  const district = await District.findOne({ slug: req.params.slug }).lean();
   if (!district) return fail(res, "District not found", 404);
 
   const [cities, destinations, attractions, treks, festivals, guides, provinceMates] = await Promise.all([
-    City.find({ districtId: district.id }).sort({ name: 1 }),
-    Destination.find({ districtId: district.id }).sort({ rating: -1 }),
-    Attraction.find({ districtId: district.id }).sort({ rating: -1 }).limit(200),
-    Trek.find({ districtIds: district.id }).sort({ rating: -1 }),
-    Festival.find({ $or: [{ districtId: district.id }, { isNationwide: true }] }).sort({ name: 1 }),
-    Guide.find({ districtId: district.id }).sort({ featured: -1 }),
-    District.find({ province: district.province, id: { $ne: district.id } }).sort({ name: 1 }),
+    City.find({ districtId: district.id }).sort({ name: 1 }).lean(),
+    Destination.find({ districtId: district.id }).sort({ rating: -1 }).lean(),
+    Attraction.find({ districtId: district.id }).sort({ rating: -1 }).limit(200).lean(),
+    Trek.find({ districtIds: district.id }).sort({ rating: -1 }).lean(),
+    Festival.find({ $or: [{ districtId: district.id }, { isNationwide: true }] }).sort({ name: 1 }).lean(),
+    Guide.find({ districtId: district.id }).sort({ featured: -1 }).lean(),
+    District.find({ province: district.province, id: { $ne: district.id } }).sort({ name: 1 }).lean(),
   ]);
 
   const destinationIds = destinations.map((d) => d.id);
   const [reviews, recommended] = await Promise.all([
     destinationIds.length
-      ? Review.find({ destinationId: { $in: destinationIds }, status: "approved" }).sort({ date: -1 }).limit(30)
+      ? Review.find({ destinationId: { $in: destinationIds }, status: "approved" }).sort({ date: -1 }).limit(30).lean()
       : Promise.resolve([]),
     destinations.length === 0
       ? Destination.find({ districtId: { $in: provinceMates.slice(0, 6).map((d) => d.id) } })
           .sort({ rating: -1 })
           .limit(6)
+          .lean()
       : Promise.resolve([]),
   ]);
 
@@ -94,7 +95,7 @@ const crud = makeAdminCrud(District, {
   // No model here uses ObjectId refs, so cities/destinations/attractions/
   // festivals/guides/reviews/bookings/wishlist/trip-plan entries scoped to
   // this district would otherwise be silently orphaned.
-  onDeleted: cascadeDistrictReferences
+  onDeleted: (doc) => cascadeDistrictReferences(doc.id as string)
 });
 
 export const createDistrict = crud.create;

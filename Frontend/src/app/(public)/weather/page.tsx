@@ -1,8 +1,9 @@
 "use client";
-import { AlertTriangle, Star, Snowflake, Sun } from "lucide-react";
+import { AlertTriangle, Star, Snowflake, Sun, CloudOff } from "lucide-react";
 import { SectionHeader } from "@/components/shared/section-header";
 import { WeatherCard } from "@/components/cards/weather-card";
 import { Reveal } from "@/components/shared/reveal";
+import { EmptyState } from "@/components/shared/empty-state";
 import { useWeather, useTravelAlerts } from "@/hooks/use-content";
 
 // Kathmandu Valley coordinates
@@ -24,8 +25,8 @@ const trekkingSeasons = [
 ];
 
 export default function WeatherPage() {
-  const { data: forecast } = useWeather(KTM_LAT, KTM_LNG);
-  const { data: alerts = [] } = useTravelAlerts();
+  const { data: forecast, isLoading: forecastLoading, isError: forecastError, refetch: refetchForecast } = useWeather(KTM_LAT, KTM_LNG);
+  const { data: alerts = [], isLoading: alertsLoading, isError: alertsError } = useTravelAlerts();
 
   return (
     <section className="container py-10">
@@ -34,12 +35,19 @@ export default function WeatherPage() {
 
       <div className="mt-8">
         <SectionHeader title="7-day forecast" subtitle="Kathmandu Valley — live data." />
-        {forecast ? (
+        {forecastError ? (
+          <EmptyState
+            icon={CloudOff}
+            title="Couldn't load the forecast"
+            description="We weren't able to reach the weather service. Please try again."
+            action={{ label: "Retry", onClick: () => refetchForecast() }}
+          />
+        ) : forecast ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
             {forecast.map((w, i) => <Reveal key={w.day + i} delay={i * 0.04}><WeatherCard day={w} /></Reveal>)}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">Loading weather data…</p>
+          <p className="text-sm text-muted-foreground">{forecastLoading ? "Loading weather data…" : "No forecast data available."}</p>
         )}
       </div>
 
@@ -73,14 +81,22 @@ export default function WeatherPage() {
 
       <div className="mt-14">
         <SectionHeader title="Travel alerts" />
-        <div className="space-y-3">
-          {alerts.map((a) => (
-            <div key={a.id} className="flex items-start gap-3 rounded-2xl border border-accent/30 bg-accent/5 p-5">
-              <AlertTriangle className="mt-0.5 shrink-0 text-accent" size={20} />
-              <p className="text-sm text-foreground"><span className="font-semibold">{a.level}:</span> {a.text}</p>
-            </div>
-          ))}
-        </div>
+        {alertsError ? (
+          <p className="text-sm text-muted-foreground">Couldn&apos;t load travel alerts right now.</p>
+        ) : alerts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            {alertsLoading ? "Loading travel alerts…" : "No active travel alerts — conditions look normal across Nepal."}
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {alerts.map((a) => (
+              <div key={a.id} className="flex items-start gap-3 rounded-2xl border border-accent/30 bg-accent/5 p-5">
+                <AlertTriangle className="mt-0.5 shrink-0 text-accent" size={20} />
+                <p className="text-sm text-foreground"><span className="font-semibold">{a.level}:</span> {a.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

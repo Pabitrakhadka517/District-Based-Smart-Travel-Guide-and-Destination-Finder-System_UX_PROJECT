@@ -17,7 +17,7 @@ export function Sidebar({ items, title }: { items: SidebarItem[]; title?: string
           {title}
         </p>
       )}
-      <nav aria-label="Account navigation" className="mt-2 flex flex-1 flex-col gap-1">
+      <nav aria-label="Account navigation" className="mt-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {items.map((it) => {
           const active = pathname === it.href;
           const Icon   = it.icon;
@@ -46,7 +46,7 @@ export function Sidebar({ items, title }: { items: SidebarItem[]; title?: string
       </nav>
       <Link
         href="/"
-        className="rounded-xl px-3 py-2.5 text-sm text-brand-200 hover:bg-brand-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-1 focus-visible:ring-offset-brand-600"
+        className="mt-2 shrink-0 rounded-xl border-t border-brand-700/70 px-3 py-2.5 pt-4 text-sm text-brand-200 hover:bg-brand-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-1 focus-visible:ring-offset-brand-600"
       >
         ← Back to site
       </Link>

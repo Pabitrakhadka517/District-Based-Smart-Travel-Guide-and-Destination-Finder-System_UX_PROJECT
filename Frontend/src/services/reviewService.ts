@@ -17,6 +17,9 @@ export const reviewService = {
   voteHelpful: (id: string) =>
     apiPost<{ helpful: number }>(`/reviews/${id}/helpful`, {}, true),
 
+  update: (id: string, payload: Partial<Pick<Review, "rating" | "title" | "body" | "photos">>) =>
+    apiPatch<Review>(`/reviews/${id}`, payload),
+
   updateStatus: (id: string, status: Review["status"]) =>
     apiPatch(`/reviews/${id}/status`, { status }),
 

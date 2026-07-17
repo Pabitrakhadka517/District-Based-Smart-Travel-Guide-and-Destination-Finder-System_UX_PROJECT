@@ -33,6 +33,28 @@ export async function cascadeDestinationReferences(destinationId: string): Promi
   ]);
 }
 
+/** A City's Destinations require a cityId (not optional), so a City delete
+ *  can't just null the reference without violating the schema — cascade the
+ *  same way a District delete cascades its own Destinations. */
+export async function cascadeCityReferences(cityId: string): Promise<void> {
+  const destinations = await Destination.find({ cityId }).select("id heroImage gallery");
+
+  await Promise.all(destinations.map((d) => cascadeDestinationReferences(d.id)));
+  for (const d of destinations) cleanupReplacedImages([d.heroImage, d.gallery], []);
+
+  await Destination.deleteMany({ cityId });
+}
+
+/** Attractions reference each other via a plain string-id array
+ *  (`nearbyAttractions`), so deleting one leaves dangling ids in whichever
+ *  other attractions listed it as nearby. */
+export async function cascadeAttractionReferences(attractionId: string): Promise<void> {
+  await Attraction.updateMany(
+    { nearbyAttractions: attractionId },
+    { $pull: { nearbyAttractions: attractionId } }
+  );
+}
+
 /** Cascades everything that hangs off a district before it (or its
  *  destinations) can be safely deleted. Also cleans up every Cloudinary
  *  image owned by the cascaded documents. */
@@ -40,7 +62,7 @@ export async function cascadeDistrictReferences(districtId: string): Promise<voi
   const [destinations, cities, attractions, festivals, guides] = await Promise.all([
     Destination.find({ districtId }).select("id heroImage gallery"),
     City.find({ districtId }).select("image"),
-    Attraction.find({ districtId }).select("heroImage gallery"),
+    Attraction.find({ districtId }).select("id heroImage gallery"),
     Festival.find({ districtId }).select("image"),
     Guide.find({ districtId }).select("cover authorAvatar")
   ]);
@@ -53,12 +75,18 @@ export async function cascadeDistrictReferences(districtId: string): Promise<voi
   for (const f of festivals) cleanupReplacedImages([f.image], []);
   for (const g of guides) cleanupReplacedImages([g.cover, g.authorAvatar], []);
 
+  // Attractions outside this district may still list one of these (now-deleted)
+  // attractions as "nearby" — detach those dangling ids too.
+  const attractionIds = attractions.map((a) => a.id);
   await Promise.all([
     Destination.deleteMany({ districtId }),
     City.deleteMany({ districtId }),
     Attraction.deleteMany({ districtId }),
     Festival.deleteMany({ districtId }),
     Guide.deleteMany({ districtId }),
+    attractionIds.length
+      ? Attraction.updateMany({ nearbyAttractions: { $in: attractionIds } }, { $pull: { nearbyAttractions: { $in: attractionIds } } })
+      : Promise.resolve(),
     // Treks can span multiple districts — detach this one rather than
     // deleting the whole trek.
     Trek.updateMany({ districtIds: districtId }, { $pull: { districtIds: districtId } })

@@ -7,6 +7,8 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { qs } from "../utils/sanitize";
 import { parsePagination } from "../utils/pagination";
 import { makeAdminCrud } from "../utils/crudFactory";
+import { cascadeCityReferences } from "../services/cascade.service";
+import { syncDistrictCounts } from "../services/counts.service";
 
 const CITY_FIELDS = [
   "slug", "districtId", "name", "description", "image", "coordinates",
@@ -19,24 +21,24 @@ export const listCities = asyncHandler(async (req: Request, res: Response) => {
   const citySlug     = qs(req.query.city);
 
   if (citySlug) {
-    const found = await City.findOne({ slug: citySlug });
+    const found = await City.findOne({ slug: citySlug }).lean();
     if (!found) return fail(res, "City not found", 404);
     const [cityDestinations, parent] = await Promise.all([
-      Destination.find({ cityId: found.id }).sort({ rating: -1 }).limit(50),
-      District.findOne({ id: found.districtId })
+      Destination.find({ cityId: found.id }).sort({ rating: -1 }).limit(50).lean(),
+      District.findOne({ id: found.districtId }).lean()
     ]);
     return ok(res, { city: found, district: parent ?? null, destinations: cityDestinations });
   }
 
   if (districtSlug) {
-    const d = await District.findOne({ slug: districtSlug });
-    const result = d ? await City.find({ districtId: d.id }).sort({ name: 1 }) : [];
+    const d = await District.findOne({ slug: districtSlug }).lean();
+    const result = d ? await City.find({ districtId: d.id }).sort({ name: 1 }).lean() : [];
     return ok(res, result);
   }
 
   const { page, limit, skip } = parsePagination(req.query, 300);
   const [result, total] = await Promise.all([
-    City.find().sort({ name: 1 }).skip(skip).limit(limit),
+    City.find().sort({ name: 1 }).skip(skip).limit(limit).lean(),
     City.countDocuments()
   ]);
   okPaginated(res, result, total, page, limit);
@@ -49,7 +51,12 @@ const crud = makeAdminCrud(City, {
   idPrefix: "c",
   notFoundMessage: "City not found",
   imageFields: ["image"],
-  checkSlugConflict: true
+  checkSlugConflict: true,
+  onWritten: (doc) => syncDistrictCounts(doc.districtId as string),
+  onDeleted: async (doc) => {
+    await cascadeCityReferences(doc.id as string);
+    await syncDistrictCounts(doc.districtId as string);
+  }
 });
 
 export const createCity = crud.create;

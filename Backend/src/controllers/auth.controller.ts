@@ -3,9 +3,10 @@ import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import { User } from "../models/User";
 import { AuditLog } from "../models/AuditLog";
+import { UsedRefreshToken } from "../models/UsedRefreshToken";
 import { ok, fail } from "../utils/response";
 import { asyncHandler } from "../utils/asyncHandler";
-import { signToken } from "../middleware/auth";
+import { signToken, ACCESS_COOKIE } from "../middleware/auth";
 import { genId, today } from "../utils/ids";
 import { sendPasswordResetEmail } from "../services/email.service";
 import { env } from "../config/env";
@@ -21,6 +22,23 @@ const REFRESH_REMEMBER_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE   = /^https?:\/\/.+/;
+
+// Mirrors the frontend's zod rule (register-form.tsx) exactly: at least 8
+// characters AND at least one more of uppercase/number/symbol — the frontend
+// rule was previously enforced only in the browser, so a direct API call
+// could register/reset to any 8-character password (e.g. "aaaaaaaa").
+function passwordStrength(pw: string): number {
+  let s = 0;
+  if (pw.length >= 8) s++;
+  if (/[A-Z]/.test(pw)) s++;
+  if (/[0-9]/.test(pw)) s++;
+  if (/[^A-Za-z0-9]/.test(pw)) s++;
+  return s;
+}
+const WEAK_PASSWORD_MSG = "Password must be at least 8 characters and include an uppercase letter, a number, or a symbol";
+function isStrongEnough(pw: string): boolean {
+  return pw.length >= 8 && passwordStrength(pw) >= 2;
+}
 
 function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
@@ -45,6 +63,23 @@ function clearRefreshCookie(res: Response): void {
   res.clearCookie(REFRESH_COOKIE, { httpOnly: true, sameSite: "lax", path: "/" });
 }
 
+// Session cookie (no maxAge) — the JWT's own `exp` claim is the real expiry
+// boundary, and the existing 401-then-refresh flow already transparently
+// re-establishes this cookie whenever it's missing or stale, so there's no
+// need to duplicate the access-token lifetime here.
+function setAccessCookie(res: Response, token: string): void {
+  res.cookie(ACCESS_COOKIE, token, {
+    httpOnly: true,
+    secure: env.nodeEnv === "production",
+    sameSite: "lax",
+    path: "/"
+  });
+}
+
+function clearAccessCookie(res: Response): void {
+  res.clearCookie(ACCESS_COOKIE, { httpOnly: true, sameSite: "lax", path: "/" });
+}
+
 async function audit(userId: string, action: string, req: Request, metadata?: object): Promise<void> {
   try {
     await AuditLog.create({
@@ -67,7 +102,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   if (!name || !email || !password) return fail(res, "name, email and password are required", 400);
   if (String(name).trim().length < 2)   return fail(res, "Name must be at least 2 characters", 400);
   if (!EMAIL_RE.test(String(email)))     return fail(res, "Invalid email address", 400);
-  if (String(password).length < 8)      return fail(res, "Password must be at least 8 characters", 400);
+  if (!isStrongEnough(String(password))) return fail(res, WEAK_PASSWORD_MSG, 400);
 
   const normalizedEmail = String(email).toLowerCase().trim();
   const existing = await User.findOne({ email: normalizedEmail });
@@ -103,6 +138,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   );
 
   setRefreshCookie(res, rtPlain, false);
+  setAccessCookie(res, accessToken);
   ok(res, { token: accessToken, user: user.toJSON() }, 201);
 });
 
@@ -118,15 +154,12 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   const invalidMsg = "Invalid email or password";
   if (!user) return fail(res, invalidMsg, 401);
 
-  if (user.lockUntil && new Date(user.lockUntil) > new Date()) {
-    const mins = Math.ceil((new Date(user.lockUntil).getTime() - Date.now()) / 60000);
-    return fail(res, `Account temporarily locked. Try again in ${mins} minute(s).`, 423);
-  }
-
-  if (user.isActive === false) {
-    return fail(res, "Your account has been deactivated. Contact support.", 403);
-  }
-
+  // Password is checked BEFORE lock/active state is revealed: anyone can send
+  // any email+password pair, so telling an unauthenticated prober "this
+  // account is locked/deactivated" (as opposed to the generic invalid-creds
+  // message) would let them enumerate account state without ever knowing the
+  // real password. Only once the password itself is proven correct is it
+  // safe to say anything more specific.
   const match = await bcrypt.compare(String(password), user.password);
   if (!match) {
     const attempts = (user.loginAttempts ?? 0) + 1;
@@ -138,6 +171,15 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     await User.updateOne({ id: user.id }, updateFields);
     await audit(user.id, "login_failed", req, { attempts });
     return fail(res, invalidMsg, 401);
+  }
+
+  if (user.lockUntil && new Date(user.lockUntil) > new Date()) {
+    const mins = Math.ceil((new Date(user.lockUntil).getTime() - Date.now()) / 60000);
+    return fail(res, `Account temporarily locked. Try again in ${mins} minute(s).`, 423);
+  }
+
+  if (user.isActive === false) {
+    return fail(res, "Your account has been deactivated. Contact support.", 403);
   }
 
   const accessToken = signToken({ sub: user.id, role: user.role as "user" | "admin" });
@@ -165,6 +207,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   );
 
   setRefreshCookie(res, rtPlain, remember);
+  setAccessCookie(res, accessToken);
   await audit(user.id, "login", req, { rememberMe: remember });
   ok(res, { token: accessToken, user: user.toJSON() });
 });
@@ -179,6 +222,19 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
 
   if (!user) {
     clearRefreshCookie(res);
+
+    // Rotation overwrites the old hash in User.refreshTokens, so the lookup
+    // above can't tell "bogus token" apart from "stolen token, already used
+    // by whoever stole it, being replayed by the legitimate owner (or vice
+    // versa)". Check the rotation history: if this hash shows up there, it's
+    // a genuine reuse of an already-rotated token — treat that as a signal
+    // the token was compromised and kill every session for that account.
+    const reused = await UsedRefreshToken.findOne({ token: hashed });
+    if (reused) {
+      await User.updateOne({ id: reused.userId }, { refreshTokens: [] });
+      await audit(reused.userId, "refresh_token_reuse_detected", req);
+    }
+
     return fail(res, "Invalid or expired session. Please log in again.", 401);
   }
 
@@ -207,8 +263,16 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
     }
   );
 
+  // Best-effort: record the just-rotated-away hash so a later replay of it
+  // can be recognized as reuse (see the `!user` branch above). Never let a
+  // logging failure block an otherwise-successful refresh.
+  UsedRefreshToken.create({ token: hashed, userId: user.id }).catch((err) => {
+    console.error("[auth] Failed to record rotated refresh token:", err);
+  });
+
   const accessToken = signToken({ sub: user.id, role: user.role as "user" | "admin" });
   setRefreshCookie(res, newPlain, remember);
+  setAccessCookie(res, accessToken);
   ok(res, { token: accessToken, user: user.toJSON() });
 });
 
@@ -230,6 +294,7 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
   }
 
   clearRefreshCookie(res);
+  clearAccessCookie(res);
   ok(res, { message: "Logged out successfully" });
 });
 
@@ -237,6 +302,7 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 export const logoutAll = asyncHandler(async (req: Request, res: Response) => {
   await User.updateOne({ id: req.auth!.sub }, { refreshTokens: [] });
   clearRefreshCookie(res);
+  clearAccessCookie(res);
   await audit(req.auth!.sub, "logout_all", req);
   ok(res, { message: "Logged out from all devices" });
 });
@@ -287,7 +353,7 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
 export const changePassword = asyncHandler(async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body ?? {};
   if (!currentPassword || !newPassword) return fail(res, "currentPassword and newPassword are required", 400);
-  if (String(newPassword).length < 8)   return fail(res, "New password must be at least 8 characters", 400);
+  if (!isStrongEnough(String(newPassword))) return fail(res, WEAK_PASSWORD_MSG, 400);
 
   const user = await User.findOne({ id: req.auth!.sub }).select("+password");
   if (!user) return fail(res, "User not found", 404);
@@ -299,6 +365,7 @@ export const changePassword = asyncHandler(async (req: Request, res: Response) =
   await User.updateOne({ id: req.auth!.sub }, { password: hash, refreshTokens: [] });
 
   clearRefreshCookie(res);
+  clearAccessCookie(res);
   await audit(req.auth!.sub, "password_change", req);
   ok(res, { message: "Password updated successfully. Please log in again." });
 });
@@ -334,7 +401,7 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
 export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
   const { token, password } = req.body ?? {};
   if (!token || !password) return fail(res, "token and password are required", 400);
-  if (String(password).length < 8) return fail(res, "Password must be at least 8 characters", 400);
+  if (!isStrongEnough(String(password))) return fail(res, WEAK_PASSWORD_MSG, 400);
 
   const hashed = hashToken(String(token));
   const user = await User.findOne({

@@ -10,7 +10,7 @@ const VALID_ROLES = ["user", "admin"] as const;
 export const listUsers = asyncHandler(async (req: Request, res: Response) => {
   const { page, limit, skip } = parsePagination(req.query, 500);
   const [users, total] = await Promise.all([
-    User.find().sort({ joinedAt: -1 }).skip(skip).limit(limit),
+    User.find().sort({ joinedAt: -1 }).skip(skip).limit(limit).lean(),
     User.countDocuments()
   ]);
   okPaginated(res, users, total, page, limit);
@@ -18,7 +18,7 @@ export const listUsers = asyncHandler(async (req: Request, res: Response) => {
 
 // GET /api/users/:id (admin)
 export const getUser = asyncHandler(async (req: Request, res: Response) => {
-  const user = await User.findOne({ id: req.params.id });
+  const user = await User.findOne({ id: req.params.id }).lean();
   if (!user) return fail(res, "User not found", 404);
   ok(res, user);
 });

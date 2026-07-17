@@ -20,6 +20,7 @@ const reviewSchema = new Schema(
     body:    { type: String, default: "" },
     date:    { type: String, required: true },
     helpful:          { type: Number, default: 0 },
+    helpfulVoterIds:  { type: [String], default: [] },
     status:           { type: String, enum: ["approved", "pending", "rejected"], default: "pending", index: true },
     photos:           { type: [imageSchema], default: [] },
     verifiedTraveler: { type: Boolean, default: false }

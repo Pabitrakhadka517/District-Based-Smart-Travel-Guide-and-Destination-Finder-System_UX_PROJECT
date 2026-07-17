@@ -16,11 +16,13 @@ import { nanoid } from "./planner-utils";
 interface Props {
   onClose: () => void;
   onCreated: (plan: TripPlan) => void;
+  /** Pre-select destinations (e.g. "add to trip" from the wishlist page). */
+  initialDestinationIds?: string[];
 }
 
 const TRAVEL_TYPES = Object.keys(TRAVEL_TYPE_CONFIG) as TravelType[];
 
-export function CreateTripModal({ onClose, onCreated }: Props) {
+export function CreateTripModal({ onClose, onCreated, initialDestinationIds = [] }: Props) {
   const createPlan = useCreatePlan();
   const [step, setStep] = useState<1 | 2>(1);
 
@@ -67,7 +69,7 @@ export function CreateTripModal({ onClose, onCreated }: Props) {
       title: title.trim(),
       travelType,
       travelers,
-      destinationIds: [],
+      destinationIds: initialDestinationIds,
       startDate,
       endDate,
       budget,
@@ -113,7 +115,11 @@ export function CreateTripModal({ onClose, onCreated }: Props) {
           <div className="px-6 py-6 space-y-6">
             <div>
               <h2 className="font-display text-2xl font-bold text-brand-600">Plan your trip</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Give your trip a name and pick a travel style.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {initialDestinationIds.length > 0
+                  ? `Give your trip a name — ${initialDestinationIds.length === 1 ? "your saved destination" : `your ${initialDestinationIds.length} saved destinations`} will be added.`
+                  : "Give your trip a name and pick a travel style."}
+              </p>
             </div>
 
             {/* Trip name */}

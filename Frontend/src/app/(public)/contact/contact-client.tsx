@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert } from "@/components/ui/alert";
+import { submitContact } from "@/services/contactService";
 
 const info = [
   { icon: Mail, label: "Email", value: "hello@nepayatra.com" },
@@ -15,6 +17,32 @@ const info = [
 
 export function ContactClient() {
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (message.trim().length < 10) {
+      setError("Message must be at least 10 characters.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await submitContact({ name: name.trim(), email: email.trim(), subject: subject.trim(), message: message.trim() });
+      setSent(true);
+      setName(""); setEmail(""); setSubject(""); setMessage("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send your message. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <>
       <section className="mesh-light border-b border-border/70">
@@ -47,14 +75,17 @@ export function ContactClient() {
                 <Button variant="outline" className="mt-6" onClick={() => setSent(false)}>Send another</Button>
               </div>
             ) : (
-              <form onSubmit={(e) => { e.preventDefault(); setSent(true); }} className="space-y-4 rounded-3xl border border-border/70 bg-white p-7 shadow-soft">
+              <form onSubmit={handleSubmit} className="space-y-4 rounded-3xl border border-border/70 bg-white p-7 shadow-soft">
+                {error && <Alert variant="error">{error}</Alert>}
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div><Label>Name</Label><Input required placeholder="Your name" className="mt-1" /></div>
-                  <div><Label>Email</Label><Input type="email" required placeholder="you@email.com" className="mt-1" /></div>
+                  <div><Label>Name</Label><Input required placeholder="Your name" className="mt-1" value={name} onChange={(e) => setName(e.target.value)} /></div>
+                  <div><Label>Email</Label><Input type="email" required placeholder="you@email.com" className="mt-1" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
                 </div>
-                <div><Label>Subject</Label><Input required placeholder="How can we help?" className="mt-1" /></div>
-                <div><Label>Message</Label><Textarea required placeholder="Tell us about your trip..." className="mt-1 min-h-[140px]" /></div>
-                <Button type="submit" variant="accent" size="lg"><Send size={16} /> Send message</Button>
+                <div><Label>Subject</Label><Input required placeholder="How can we help?" className="mt-1" value={subject} onChange={(e) => setSubject(e.target.value)} /></div>
+                <div><Label>Message</Label><Textarea required placeholder="Tell us about your trip..." className="mt-1 min-h-[140px]" value={message} onChange={(e) => setMessage(e.target.value)} /></div>
+                <Button type="submit" variant="accent" size="lg" disabled={submitting}>
+                  <Send size={16} /> {submitting ? "Sending…" : "Send message"}
+                </Button>
               </form>
             )}
           </div>

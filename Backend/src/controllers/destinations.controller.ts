@@ -9,6 +9,7 @@ import { parsePagination } from "../utils/pagination";
 import { getWeatherInsight } from "../services/weather";
 import { makeAdminCrud } from "../utils/crudFactory";
 import { cascadeDestinationReferences } from "../services/cascade.service";
+import { syncDistrictCounts, syncCityDestinationCount } from "../services/counts.service";
 
 const DESTINATION_FIELDS = [
   "slug", "cityId", "districtId", "name", "tagline", "description", "category",
@@ -35,7 +36,7 @@ export const listDestinations = asyncHandler(async (req: Request, res: Response)
 
   const { page, limit, skip } = parsePagination(req.query, 200);
   const [result, total] = await Promise.all([
-    Destination.find(filter).sort({ rating: -1 }).skip(skip).limit(limit),
+    Destination.find(filter).sort({ rating: -1 }).skip(skip).limit(limit).lean(),
     Destination.countDocuments(filter)
   ]);
   okPaginated(res, result, total, page, limit);
@@ -43,20 +44,21 @@ export const listDestinations = asyncHandler(async (req: Request, res: Response)
 
 // GET /api/destinations/:slug -> { destination, reviews, nearby, ratingBreakdown, similar, nearbyAttractions }
 export const getDestination = asyncHandler(async (req: Request, res: Response) => {
-  const destination = await Destination.findOne({ slug: req.params.slug });
+  const destination = await Destination.findOne({ slug: req.params.slug }).lean();
   if (!destination) return fail(res, "Destination not found", 404);
 
   const [reviews, nearby, ratingAgg, similar, nearbyAttractions] = await Promise.all([
-    Review.find({ destinationId: destination.id, status: "approved" }).sort({ date: -1 }).limit(50),
-    Destination.find({ id: { $in: destination.nearby } }),
+    Review.find({ destinationId: destination.id, status: "approved" }).sort({ date: -1 }).limit(50).lean(),
+    Destination.find({ id: { $in: destination.nearby } }).lean(),
     Review.aggregate<{ _id: number; count: number }>([
       { $match: { destinationId: destination.id, status: "approved" } },
       { $group: { _id: "$rating", count: { $sum: 1 } } }
     ]),
     Destination.find({ category: destination.category, id: { $ne: destination.id } })
       .sort({ rating: -1 })
-      .limit(4),
-    Attraction.find({ districtId: destination.districtId }).sort({ rating: -1 }).limit(6)
+      .limit(4)
+      .lean(),
+    Attraction.find({ districtId: destination.districtId }).sort({ rating: -1 }).limit(6).lean()
   ]);
 
   const totalReviews = ratingAgg.reduce((sum, r) => sum + r.count, 0);
@@ -74,7 +76,8 @@ export const getDestination = asyncHandler(async (req: Request, res: Response) =
 // GET /api/destinations/:slug/weather-insight
 export const getDestinationWeatherInsight = asyncHandler(async (req: Request, res: Response) => {
   const destination = await Destination.findOne({ slug: req.params.slug })
-    .select("coordinates bestTimeToVisit name");
+    .select("coordinates bestTimeToVisit name")
+    .lean();
   if (!destination) return fail(res, "Destination not found", 404);
 
   const { lat, lng } = destination.coordinates as { lat: number; lng: number };
@@ -93,10 +96,22 @@ const crud = makeAdminCrud(Destination, {
   imageFields: ["heroImage"],
   galleryFields: ["gallery"],
   checkSlugConflict: true,
+  onWritten: async (doc) => {
+    await Promise.all([
+      syncDistrictCounts(doc.districtId as string),
+      syncCityDestinationCount(doc.cityId as string)
+    ]);
+  },
   // Clears reviews/bookings for this destination and pulls it out of any
   // wishlist/trip-plan arrays that reference it — nothing here uses ObjectId
   // refs, so none of that would be cleaned up automatically otherwise.
-  onDeleted: cascadeDestinationReferences
+  onDeleted: async (doc) => {
+    await cascadeDestinationReferences(doc.id as string);
+    await Promise.all([
+      syncDistrictCounts(doc.districtId as string),
+      syncCityDestinationCount(doc.cityId as string)
+    ]);
+  }
 });
 
 export const createDestination = crud.create;

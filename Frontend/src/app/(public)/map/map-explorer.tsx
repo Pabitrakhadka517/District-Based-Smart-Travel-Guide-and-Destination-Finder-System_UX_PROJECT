@@ -16,6 +16,7 @@ import { ItemRow } from "@/components/maps/item-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { FlyToTarget } from "@/components/maps/leaflet/fly-to-controller";
 import type { HeatPoint } from "@/components/maps/leaflet/heatmap-layer";
+import type { WeatherPoint } from "@/components/maps/leaflet/weather-layer";
 
 const NepalMap = dynamic(
   () => import("@/components/maps/leaflet/nepal-map").then((m) => m.NepalMap),
@@ -47,6 +48,7 @@ export function MapExplorer(props: Props) {
   const [selected, setSelected] = useState<MapEntry | null>(null);
   const [flyToTarget, setFlyToTarget] = useState<FlyToTarget | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
   const [search, setSearch] = useState("");
 
   const allEntries = useMemo<MapEntry[]>(() => [
@@ -138,6 +140,24 @@ export function MapExplorer(props: Props) {
     return result;
   }, [destinations, districtsById]);
 
+  /* One weather point per province — its districts' coordinate centroid —
+   * rather than one per marker, which would mean hundreds of Open-Meteo calls. */
+  const weatherPoints = useMemo<WeatherPoint[]>(() => {
+    const groups: Record<string, { latSum: number; lngSum: number; count: number }> = {};
+    for (const d of districts) {
+      const g = groups[d.province] ?? (groups[d.province] = { latSum: 0, lngSum: 0, count: 0 });
+      g.latSum += d.coordinates.lat;
+      g.lngSum += d.coordinates.lng;
+      g.count++;
+    }
+    return Object.entries(groups).map(([province, g]) => ({
+      id: province,
+      lat: g.latSum / g.count,
+      lng: g.lngSum / g.count,
+      label: province,
+    }));
+  }, [districts]);
+
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-background">
       {/* Page header — unchanged */}
@@ -164,6 +184,8 @@ export function MapExplorer(props: Props) {
               provinceCounts={provinceCounts}
               heatPoints={heatPoints}
               showHeatmap={showHeatmap}
+              weatherPoints={weatherPoints}
+              showWeather={showWeather}
             />
             <FilterPanel
               visibleKinds={visibleKinds}
@@ -171,6 +193,8 @@ export function MapExplorer(props: Props) {
               counts={counts}
               showHeatmap={showHeatmap}
               onToggleHeatmap={() => setShowHeatmap((v) => !v)}
+              showWeather={showWeather}
+              onToggleWeather={() => setShowWeather((v) => !v)}
             />
             <MapSearchBar onSelect={handleSearchSelect} />
           </div>
