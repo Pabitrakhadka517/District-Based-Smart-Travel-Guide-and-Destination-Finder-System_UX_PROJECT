@@ -10,7 +10,7 @@ import { FestivalForm } from "./festival-form";
 
 type SortKey = "name" | "month";
 
-export function FestivalsAdmin({ festivals: initial }: { festivals: Festival[] }) {
+export function FestivalsAdmin({ festivals: initial, total }: { festivals: Festival[]; total: number }) {
   const [rows,  setRows]  = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -74,6 +74,13 @@ export function FestivalsAdmin({ festivals: initial }: { festivals: Festival[] }
             {error}
             <button onClick={() => setError(null)} aria-label="Dismiss" className="text-destructive/60 hover:text-destructive"><X size={14} /></button>
           </div>
+        </Alert>
+      )}
+
+      {total > rows.length && (
+        <Alert variant="warning">
+          Showing the most recent {rows.length.toLocaleString()} of {total.toLocaleString()} total festivals.
+          Narrow your search to find older ones.
         </Alert>
       )}
 

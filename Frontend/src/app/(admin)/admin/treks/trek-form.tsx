@@ -7,6 +7,7 @@ import { ImageUploader, GalleryUploader } from "@/components/dashboard/image-upl
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { adminEntityService } from "@/services/adminEntityService";
+import { uploadService } from "@/services/uploadService";
 import { useDistricts } from "@/hooks/use-content";
 import { slugify } from "@/lib/utils";
 
@@ -75,10 +76,15 @@ export function TrekForm({ trek, onClose, onSaved }: TrekFormProps) {
     }
   };
 
+  const cancel = () => {
+    uploadService.discardUnsavedImages([trek?.heroImage, trek?.gallery], [heroImage, gallery]);
+    onClose();
+  };
+
   return (
     <EntityFormModal
       title={isEdit ? `Edit ${trek!.name}` : "Add trek"}
-      onClose={onClose}
+      onClose={cancel}
       onSubmit={submit}
       submitting={submitting}
       error={error}

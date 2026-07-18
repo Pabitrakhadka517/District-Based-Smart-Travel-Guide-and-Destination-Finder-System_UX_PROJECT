@@ -11,7 +11,7 @@ import { TrekForm } from "./trek-form";
 
 type SortKey = "name" | "rating" | "price";
 
-export function TreksAdmin({ treks: initial }: { treks: Trek[] }) {
+export function TreksAdmin({ treks: initial, total }: { treks: Trek[]; total: number }) {
   const [rows,  setRows]  = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -77,6 +77,13 @@ export function TreksAdmin({ treks: initial }: { treks: Trek[] }) {
             {error}
             <button onClick={() => setError(null)} aria-label="Dismiss" className="text-destructive/60 hover:text-destructive"><X size={14} /></button>
           </div>
+        </Alert>
+      )}
+
+      {total > rows.length && (
+        <Alert variant="warning">
+          Showing the most recent {rows.length.toLocaleString()} of {total.toLocaleString()} total treks.
+          Narrow your search to find older ones.
         </Alert>
       )}
 

@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Check, X, Trash2, Ban } from "lucide-react";
+import { Check, X, Trash2, Ban, CheckCheck, Download } from "lucide-react";
 import { AdminTable, type Column } from "@/components/dashboard/admin-table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { apiGetPaginated, apiPatch, apiDelete } from "@/services/api-client";
@@ -19,11 +20,32 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
-const STATUS_BADGE: Record<Booking["status"], "success" | "accent" | "outline"> = {
+const STATUS_BADGE: Record<Booking["status"], "success" | "accent" | "outline" | "secondary"> = {
   confirmed: "success",
   pending: "accent",
+  completed: "secondary",
   cancelled: "outline",
 };
+
+function downloadCsv(rows: BookingRow[]) {
+  const header = ["Destination", "Traveller", "Phone", "Travel date", "Travelers", "Accommodation", "Transport", "Est. cost", "Status", "Booked"];
+  const escape = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  const lines = [
+    header.map(escape).join(","),
+    ...rows.map((b) =>
+      [b.name, b.fullName, b.phone, b.travelDate, b.travelers, b.accommodationType, b.transportPreference, b.estimatedCost, b.status, formatDate(b.createdAt)]
+        .map(escape)
+        .join(",")
+    ),
+  ];
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `bookings-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export function BookingsAdmin() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -75,6 +97,7 @@ export function BookingsAdmin() {
     all: bookings.length,
     pending: bookings.filter((b) => b.status === "pending").length,
     confirmed: bookings.filter((b) => b.status === "confirmed").length,
+    completed: bookings.filter((b) => b.status === "completed").length,
     cancelled: bookings.filter((b) => b.status === "cancelled").length,
   }), [bookings]);
 
@@ -92,6 +115,15 @@ export function BookingsAdmin() {
     {
       key: "name", label: "Destination",
       render: (b) => <span className="font-medium text-brand-600">{b.name}</span>,
+    },
+    {
+      key: "fullName", label: "Traveller",
+      render: (b) => (
+        <div>
+          <p className="text-foreground">{b.fullName}</p>
+          <p className="text-xs text-muted-foreground">{b.phone}</p>
+        </div>
+      ),
     },
     {
       key: "travelDate", label: "Travel date",
@@ -113,35 +145,43 @@ export function BookingsAdmin() {
       render: (b) => <Badge variant={STATUS_BADGE[b.status]} className="capitalize">{b.status}</Badge>,
     },
     {
-      key: "createdAt", label: "Booked",
+      key: "createdAt", label: "Created",
       render: (b) => <span className="text-xs text-muted-foreground">{formatDate(b.createdAt)}</span>,
     },
     {
       key: "id", label: "Review",
       render: (b) => (
         <div className="flex justify-end gap-1">
-          <button
-            onClick={() => setStatus(b.id, "confirmed")}
-            aria-label="Confirm booking"
-            disabled={b.status === "confirmed"}
-            className={cn(
-              "grid h-8 w-8 place-items-center rounded-lg bg-success/10 text-success transition hover:bg-success/20",
-              b.status === "confirmed" && "opacity-30"
-            )}
-          >
-            <Check size={14} />
-          </button>
-          <button
-            onClick={() => setStatus(b.id, "cancelled")}
-            aria-label="Cancel booking"
-            disabled={b.status === "cancelled"}
-            className={cn(
-              "grid h-8 w-8 place-items-center rounded-lg bg-accent/10 text-accent transition hover:bg-accent/20",
-              b.status === "cancelled" && "opacity-30"
-            )}
-          >
-            <Ban size={14} />
-          </button>
+          {b.status === "pending" && (
+            <button
+              onClick={() => setStatus(b.id, "confirmed")}
+              aria-label="Approve booking"
+              title="Approve"
+              className="grid h-8 w-8 place-items-center rounded-lg bg-success/10 text-success transition hover:bg-success/20"
+            >
+              <Check size={14} />
+            </button>
+          )}
+          {b.status === "confirmed" && (
+            <button
+              onClick={() => setStatus(b.id, "completed")}
+              aria-label="Mark booking completed"
+              title="Mark completed"
+              className="grid h-8 w-8 place-items-center rounded-lg bg-secondary/10 text-secondary transition hover:bg-secondary/20"
+            >
+              <CheckCheck size={14} />
+            </button>
+          )}
+          {b.status !== "cancelled" && b.status !== "completed" && (
+            <button
+              onClick={() => setStatus(b.id, "cancelled")}
+              aria-label={b.status === "pending" ? "Reject booking" : "Cancel booking"}
+              title={b.status === "pending" ? "Reject" : "Cancel"}
+              className="grid h-8 w-8 place-items-center rounded-lg bg-accent/10 text-accent transition hover:bg-accent/20"
+            >
+              <Ban size={14} />
+            </button>
+          )}
         </div>
       ),
     },
@@ -160,18 +200,24 @@ export function BookingsAdmin() {
   const STATUS_TABS: { key: StatusFilter; label: string }[] = [
     { key: "pending", label: "Pending" },
     { key: "confirmed", label: "Confirmed" },
+    { key: "completed", label: "Completed" },
     { key: "cancelled", label: "Cancelled" },
     { key: "all", label: "All" },
   ];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="h2 text-brand-600">Bookings</h1>
-        <p className="lead mt-1">
-          Review pending trip bookings and confirm or cancel them. Travelers can only cancel their own
-          bookings — moving a booking to “confirmed” is an admin-only action.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="h2 text-brand-600">Bookings</h1>
+          <p className="lead mt-1">
+            Review pending trip bookings — approve, reject, cancel, or mark them completed. Travelers can
+            only cancel their own pending/confirmed bookings; every other status change is admin-only.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => downloadCsv(rows)}>
+          <Download size={14} /> Export CSV
+        </Button>
       </div>
 
       {error && (
@@ -226,9 +272,14 @@ export function BookingsAdmin() {
         onDelete={(row) => remove(row.id)}
         bulkActions={[
           {
-            label: "Confirm selected",
+            label: "Approve selected",
             icon: Check,
             onClick: (ids) => ids.forEach((id) => setStatus(id, "confirmed")),
+          },
+          {
+            label: "Mark selected as completed",
+            icon: CheckCheck,
+            onClick: (ids) => ids.forEach((id) => setStatus(id, "completed")),
           },
           {
             label: "Cancel selected",

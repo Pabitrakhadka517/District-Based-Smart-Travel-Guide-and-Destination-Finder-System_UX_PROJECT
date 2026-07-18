@@ -20,7 +20,7 @@ const CATEGORIES = [
 
 type CategoryFilter = (typeof CATEGORIES)[number];
 
-export function DestinationsAdmin({ destinations: initial }: { destinations: Destination[] }) {
+export function DestinationsAdmin({ destinations: initial, total }: { destinations: Destination[]; total: number }) {
   const [rows,   setRows]   = useState(initial);
   const [error,  setError]  = useState<string | null>(null);
   const [search,          setSearch]          = useState("");
@@ -161,6 +161,13 @@ export function DestinationsAdmin({ destinations: initial }: { destinations: Des
               <X size={14} />
             </button>
           </div>
+        </Alert>
+      )}
+
+      {total > rows.length && (
+        <Alert variant="warning">
+          Showing the most recent {rows.length.toLocaleString()} of {total.toLocaleString()} total destinations.
+          Narrow your search to find older ones.
         </Alert>
       )}
 
