@@ -234,3 +234,18 @@ export interface IBooking {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type NotificationType =
+  | "booking_confirmed" | "booking_cancelled" | "trip_ready"
+  | "booking_pending" | "review_pending";
+
+export interface INotification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  message: string;
+  link: string;
+  read: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}

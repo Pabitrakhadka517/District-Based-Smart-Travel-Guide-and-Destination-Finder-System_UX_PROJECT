@@ -9,6 +9,7 @@ import { qs, sanitizeGallery } from "../utils/sanitize";
 import { parsePagination } from "../utils/pagination";
 import { PLACEHOLDER } from "../services/cloudinary.service";
 import { recomputeDestinationRating } from "../services/rating.service";
+import { createNotification, ADMIN_BROADCAST_USER_ID } from "../services/notification.service";
 
 const VALID_STATUSES = ["approved", "pending", "rejected"] as const;
 
@@ -91,6 +92,13 @@ export const createReview = asyncHandler(async (req: Request, res: Response) => 
     status:           "pending",
     photos,
     verifiedTraveler: true
+  });
+
+  await createNotification({
+    userId: ADMIN_BROADCAST_USER_ID,
+    type: "review_pending",
+    message: "A new review is pending moderation",
+    link: "/admin/reviews"
   });
 
   ok(res, created, 201);

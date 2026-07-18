@@ -9,6 +9,7 @@ import { genId, today, shiftDate } from "../utils/ids";
 import { parsePagination } from "../utils/pagination";
 import { qs } from "../utils/sanitize";
 import { sendBookingStatusEmail } from "../services/email.service";
+import { createNotification, ADMIN_BROADCAST_USER_ID } from "../services/notification.service";
 
 const VALID_ACCOMMODATION = ["Budget", "Standard", "Luxury"] as const;
 const VALID_TRANSPORT = ["Local Bus", "Private Jeep", "Domestic Flight"] as const;
@@ -191,6 +192,13 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     console.error("[booking] Failed to mark trip plan as booked:", err);
   }
 
+  await createNotification({
+    userId: ADMIN_BROADCAST_USER_ID,
+    type: "booking_pending",
+    message: `New booking request from ${fullName}`,
+    link: "/admin/bookings"
+  });
+
   ok(res, booking, 201);
 });
 
@@ -295,10 +303,25 @@ export const adminUpdateBookingStatus = asyncHandler(async (req: Request, res: R
     await revertTripPlanBooking(booking.tripPlanId, booking.id);
   }
 
+  // The in-app notification is a fast local write, so it's awaited here —
+  // unlike the email below, callers (e.g. this same admin action's UI, or
+  // the traveller's next notification-bell poll) should never be able to
+  // observe a "confirmed" response before the notification exists.
+  if (status === "confirmed" || status === "cancelled") {
+    await createNotification({
+      userId: booking.userId,
+      type: status === "confirmed" ? "booking_confirmed" : "booking_cancelled",
+      message: status === "confirmed"
+        ? "Your booking has been confirmed!"
+        : "Your booking was cancelled.",
+      link: "/tracking"
+    });
+  }
+
   ok(res, booking);
 
-  // Best-effort notification — the status change above is already durably
-  // saved, so a missing/misconfigured SMTP transport must never fail the request.
+  // Best-effort email — the status change above is already durably saved,
+  // so a missing/misconfigured SMTP transport must never fail the request.
   if (status === "confirmed" || status === "cancelled") {
     void notifyBookingStatusChange(booking, status);
   }

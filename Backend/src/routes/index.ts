@@ -24,6 +24,7 @@ import * as checklists   from "../controllers/packingChecklists.controller";
 import * as bookings     from "../controllers/booking.controller";
 import * as contact      from "../controllers/contact.controller";
 import * as newsletter   from "../controllers/newsletter.controller";
+import * as notifications from "../controllers/notifications.controller";
 
 const router = Router();
 
@@ -121,6 +122,10 @@ router.post(  "/bookings",     requireAuth, bookings.createBooking);
 router.patch( "/bookings/:id", requireAuth, bookings.updateBookingStatus);
 router.delete("/bookings/:id", requireAuth, bookings.deleteBooking);
 
+router.get(   "/notifications",          requireAuth, notifications.listNotifications);
+router.patch( "/notifications/read-all", requireAuth, notifications.markAllRead);
+router.patch( "/notifications/:id/read", requireAuth, notifications.markRead);
+
 /* ------------------------------ Uploads ----------------------------------- */
 // Rate-limited to slow down abuse of the (relatively expensive) Cloudinary upload path
 const uploadLimiter = rateLimit({
@@ -179,6 +184,10 @@ router.get("/admin/analytics",     requireAdmin, stats.getAdminAnalytics);
 router.get(   "/admin/bookings",     requireAdmin, bookings.adminListBookings);
 router.patch( "/admin/bookings/:id", requireAdmin, bookings.adminUpdateBookingStatus);
 router.delete("/admin/bookings/:id", requireAdmin, bookings.adminDeleteBooking);
+
+router.get(   "/admin/notifications",          requireAdmin, notifications.listAdminNotifications);
+router.patch( "/admin/notifications/read-all", requireAdmin, notifications.markAllAdminRead);
+router.patch( "/admin/notifications/:id/read", requireAdmin, notifications.markAdminRead);
 router.get("/users",               requireAdmin, users.listUsers);
 router.get("/users/:id",           requireAdmin, users.getUser);
 router.patch("/users/:id/role",    requireAdmin, users.updateUserRole);

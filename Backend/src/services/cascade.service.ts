@@ -1,5 +1,6 @@
 import { Review } from "../models/Review";
 import { Booking } from "../models/Booking";
+import { Notification } from "../models/Notification";
 import { User } from "../models/User";
 import { TripPlan } from "../models/TripPlan";
 import { City } from "../models/City";
@@ -157,7 +158,8 @@ export async function cascadeUserReferences(userId: string): Promise<void> {
   await Promise.all([
     TripPlan.deleteMany({ userId }),
     Booking.deleteMany({ userId }),
-    Review.deleteMany({ userId })
+    Review.deleteMany({ userId }),
+    Notification.deleteMany({ userId })
   ]);
 
   for (const t of trips) cleanupReplacedImages([t.photos], []);

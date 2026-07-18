@@ -6,6 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { genId } from "../utils/ids";
 import { pick, sanitizeGallery } from "../utils/sanitize";
 import { cleanupReplacedImages } from "../services/cloudinary.service";
+import { createNotification } from "../services/notification.service";
 
 const TRIP_FIELDS = [
   "title", "travelType", "travelers",
@@ -206,6 +207,14 @@ export const updateTrip = asyncHandler(async (req: Request, res: Response) => {
   );
   if (!trip) return fail(res, "Trip not found", 404);
   if (body.photos !== undefined) cleanupReplacedImages([existing.photos], [trip.photos]);
+  if (statusChanging && body.status === "ready") {
+    await createNotification({
+      userId: req.auth!.sub,
+      type: "trip_ready",
+      message: `"${trip.title}" is ready to book!`,
+      link: "/booking"
+    });
+  }
   ok(res, trip);
 });
 
