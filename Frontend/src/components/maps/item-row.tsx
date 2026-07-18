@@ -22,7 +22,15 @@ export function KindChip({ entry }: { entry: MapEntry }) {
   );
 }
 
-export function ItemRow({ entry, isSelected, onClick }: { entry: MapEntry; isSelected: boolean; onClick: () => void }) {
+export function ItemRow({
+  entry, isSelected, onClick, distanceKm,
+}: {
+  entry: MapEntry;
+  isSelected: boolean;
+  onClick: () => void;
+  /** Distance from the traveller's located position, in km — omitted unless "Sort by distance" is active. */
+  distanceKm?: number;
+}) {
   const rating = entryRating(entry);
 
   return (
@@ -48,6 +56,11 @@ export function ItemRow({ entry, isSelected, onClick }: { entry: MapEntry; isSel
               <Star size={10} className="fill-accent text-accent" />
               <span className="text-[10px] font-medium text-muted-foreground">{rating.toFixed(1)}</span>
             </div>
+          )}
+          {distanceKm !== undefined && (
+            <span className="text-[10px] font-medium text-secondary">
+              {distanceKm < 1 ? `${Math.round(distanceKm * 1000)} m` : `${distanceKm.toFixed(1)} km`} away
+            </span>
           )}
         </div>
       </div>
