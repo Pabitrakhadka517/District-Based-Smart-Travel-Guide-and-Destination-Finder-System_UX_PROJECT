@@ -3,7 +3,13 @@ import type { TouristAttraction } from "@/types";
 import { EntityImageCard } from "@/components/cards/entity-image-card";
 import { categorySolidBadge } from "@/lib/category-colors";
 
-export function AttractionCard({ attraction: a }: { attraction: TouristAttraction }) {
+interface AttractionCardProps {
+  attraction: TouristAttraction;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+}
+
+export function AttractionCard({ attraction: a, selected, onToggleSelect }: AttractionCardProps) {
   const feeLabel = a.entryFee?.foreigner ? `NPR ${a.entryFee.foreigner}` : "Free entry";
 
   return (
@@ -17,6 +23,8 @@ export function AttractionCard({ attraction: a }: { attraction: TouristAttractio
       categoryLabel={a.category}
       categoryBadgeClassName={categorySolidBadge(a.category)}
       trending={a.trending}
+      selected={selected}
+      onToggleSelect={onToggleSelect}
       footer={
         <>
           <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock size={12} /> {a.openingHours ? a.openingHours.split("(")[0].trim() : "Open daily"}</span>

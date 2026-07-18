@@ -10,7 +10,9 @@ import type { TripPlan } from "@/types";
 
 /** Lets a user add a destination directly into an existing trip plan, or spin up a new
  *  one with it pre-filled — the wishlist and trip planner otherwise never talk to each other. */
-export function AddToTripButton({ destinationId }: { destinationId: string }) {
+export function AddToTripButton({
+  destinationId, dark = false, fullWidth = true,
+}: { destinationId: string; dark?: boolean; fullWidth?: boolean }) {
   const [open, setOpen] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [busyTripId, setBusyTripId] = useState<string | null>(null);
@@ -29,11 +31,14 @@ export function AddToTripButton({ destinationId }: { destinationId: string }) {
   };
 
   return (
-    <div className="relative">
+    <div className={cn("relative", fullWidth && "w-full")}>
       <Button
-        variant="outline"
+        variant={dark ? undefined : "outline"}
         size="sm"
-        className="w-full"
+        className={cn(
+          fullWidth && "w-full",
+          dark && "rounded-2xl border border-white/30 bg-white/15 px-5 py-2.5 text-white backdrop-blur-sm hover:bg-white/25"
+        )}
         onClick={() => setOpen((v) => !v)}
       >
         <MapPinPlus size={14} /> Add to trip
@@ -49,7 +54,12 @@ export function AddToTripButton({ destinationId }: { destinationId: string }) {
             className="fixed inset-0 z-10 cursor-default"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute left-0 right-0 top-full z-20 mt-1.5 max-h-64 overflow-y-auto rounded-xl border border-border bg-white p-1.5 shadow-card">
+          <div
+            className={cn(
+              "absolute top-full z-20 mt-1.5 max-h-64 overflow-y-auto rounded-xl border border-border bg-white p-1.5 shadow-card",
+              fullWidth ? "left-0 right-0" : "left-0 min-w-[220px]"
+            )}
+          >
             {plans.length === 0 && (
               <p className="px-2.5 py-2 text-xs text-muted-foreground">No trips yet — create one below.</p>
             )}

@@ -20,6 +20,17 @@ async function get<T>(path: string): Promise<T> {
   return json.data as T;
 }
 
+/** Like `get`, but keeps `total` from a paginated list endpoint instead of
+ *  discarding it — used by admin list pages so a real overflow past the
+ *  fetch limit can be surfaced instead of silently truncating. */
+export async function getPaginated<T>(path: string): Promise<{ data: T[]; total: number }> {
+  const res = await fetch(`${API}${path}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Request to ${path} failed with status ${res.status}`);
+  const json = await res.json();
+  const data = (json.data as T[]) ?? [];
+  return { data, total: (json.total as number) ?? data.length };
+}
+
 // Explicit high limit (matching the backend's global maxLimit ceiling) rather than
 // relying on each resource's smaller default — keeps "fetch everything" callers
 // (admin tables, public list pages) from silently truncating as the catalog grows.

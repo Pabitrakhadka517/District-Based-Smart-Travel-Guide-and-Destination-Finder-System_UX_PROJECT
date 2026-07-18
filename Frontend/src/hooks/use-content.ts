@@ -49,6 +49,18 @@ export function useDistrictAttractions(districtSlug: string, category?: string) 
   });
 }
 
+/** Full district tourism-hub payload (all destinations/attractions/treks/
+ *  festivals/guides for one district) — the data source for the Trip
+ *  Planner's district-first discovery step. */
+export function useDistrictFull(districtSlug: string) {
+  return useQuery({
+    queryKey: ["district-full", districtSlug],
+    queryFn: () => districtService.getFull(districtSlug),
+    enabled: !!districtSlug,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /* ----------------------------- Attractions ------------------------------ */
 
 export function useAttractions(params = "", initialData?: TouristAttraction[]) {
@@ -266,7 +278,13 @@ export function useCreateBooking() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: Partial<Booking>) => bookingService.create(payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+    // Booking a trip plan also flips that plan's status/bookingId server-side
+    // (see createBooking in booking.controller.ts), so the cached plan list
+    // needs refetching too, not just the bookings list.
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["bookings"] });
+      qc.invalidateQueries({ queryKey: ["plans"] });
+    },
   });
 }
 
@@ -274,7 +292,10 @@ export function useCancelBooking() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => bookingService.updateStatus(id, "cancelled"),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["bookings"] });
+      qc.invalidateQueries({ queryKey: ["plans"] });
+    },
   });
 }
 
@@ -282,7 +303,10 @@ export function useDeleteBooking() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => bookingService.remove(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["bookings"] });
+      qc.invalidateQueries({ queryKey: ["plans"] });
+    },
   });
 }
 

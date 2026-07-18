@@ -5,18 +5,34 @@ import {
   MapPin, CheckCircle2, CalendarDays, Users, TrendingUp, Route,
   Flame, CheckSquare, ChevronRight, Play, Trophy, BarChart2, Loader2,
   PencilLine, Camera, Wallet, Clock, X, Star,
-  Circle, BarChart, Compass, Save, PenSquare,
+  Circle, BarChart, Compass, Save, PenSquare, Hotel, Bus, Hash,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { GalleryUploader } from "@/components/dashboard/image-uploader";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/store/auth-store";
-import { usePlans, useUpdatePlan, useUserReviews, useDestinations, useCreateReview } from "@/hooks/use-content";
+import { usePlans, useUpdatePlan, useUserReviews, useDestinations, useCreateReview, useBookings } from "@/hooks/use-content";
 import { TRAVEL_TYPE_CONFIG, STATUS_STYLE, fmtDay } from "@/app/(user)/planner/planner-utils";
 import { EXPENSE_CATEGORY_STYLE } from "@/lib/category-colors";
 import { formatDate, formatCurrency } from "@/lib/utils";
-import type { TripPlan, TripActivity, Review, Destination } from "@/types";
+import type { TripPlan, TripActivity, Review, Destination, Booking } from "@/types";
+
+type BookingById = Map<string, Booking>;
+
+/** Small inline row showing what was actually reserved — Booking is the
+ *  source of truth here (it may differ from the plan's saved preference if
+ *  the traveller changed accommodation/transport at booking time). */
+function BookingMeta({ booking }: { booking?: Booking }) {
+  if (!booking) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+      <span className="flex items-center gap-1"><Hash size={11} /> Ref #{booking.id.slice(-8).toUpperCase()}</span>
+      <span className="flex items-center gap-1"><Hotel size={11} /> {booking.accommodationType}</span>
+      <span className="flex items-center gap-1"><Bus size={11} /> {booking.transportPreference}</span>
+    </div>
+  );
+}
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 
@@ -84,7 +100,7 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ size?: number 
 
 /* ── Upcoming tab ─────────────────────────────────────────────────────────── */
 
-function UpcomingTab({ trips }: { trips: TripPlan[] }) {
+function UpcomingTab({ trips, bookingById }: { trips: TripPlan[]; bookingById: BookingById }) {
   const updatePlan = useUpdatePlan();
   const [starting, setStarting] = useState<string | null>(null);
 
@@ -99,8 +115,8 @@ function UpcomingTab({ trips }: { trips: TripPlan[] }) {
       <EmptyState
         icon={CalendarDays}
         title="No upcoming trips"
-        description='Mark a planned trip as "Ready" in the Trip Planner, then return here to begin your journey.'
-        action={{ label: "Go to Trip Planner", href: "/planner" }}
+        description="Book a Ready trip plan from the Booking page, then return here to begin your journey."
+        action={{ label: "Go to Booking", href: "/booking" }}
       />
     );
   }
@@ -111,7 +127,12 @@ function UpcomingTab({ trips }: { trips: TripPlan[] }) {
         const cfg          = TRAVEL_TYPE_CONFIG[trip.travelType] ?? TRAVEL_TYPE_CONFIG.Adventure;
         const Icon         = cfg.icon;
         const status       = STATUS_STYLE[trip.status];
-        const isReady      = trip.status === "ready";
+        const booking      = bookingById.get(trip.bookingId);
+        // A trip can only actually start once an admin has approved its
+        // booking — a still-pending booking means the traveller is waiting
+        // on approval, not ready to travel.
+        const canStart     = trip.status === "booked" && booking?.status === "confirmed";
+        const awaitingApproval = trip.status === "booked" && booking?.status === "pending";
         const doneItems    = trip.checklist?.filter((i) => i.completed).length ?? 0;
         const totalItems   = trip.checklist?.length ?? 0;
         const checklistPct = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : null;
@@ -169,6 +190,8 @@ function UpcomingTab({ trips }: { trips: TripPlan[] }) {
                 )}
               </div>
 
+              {booking && <BookingMeta booking={booking} />}
+
               {/* Checklist readiness */}
               {checklistPct !== null && (
                 <div>
@@ -203,15 +226,17 @@ function UpcomingTab({ trips }: { trips: TripPlan[] }) {
                   Edit in Planner
                 </Button>
               </Link>
-              {isReady ? (
+              {canStart ? (
                 <Button variant="accent" size="sm" disabled={starting === trip.id} onClick={() => startTrip(trip)}>
                   {starting === trip.id
                     ? <><Loader2 size={13} className="animate-spin" /> Starting…</>
                     : <><Play size={13} /> Start trip</>
                   }
                 </Button>
+              ) : awaitingApproval ? (
+                <span className="text-xs text-muted-foreground">Waiting for admin approval before you can start.</span>
               ) : (
-                <span className="text-xs text-muted-foreground">Mark &quot;Ready&quot; in the Planner to begin.</span>
+                <span className="text-xs text-muted-foreground">This trip isn&apos;t booked yet.</span>
               )}
             </div>
           </div>
@@ -225,7 +250,7 @@ function UpcomingTab({ trips }: { trips: TripPlan[] }) {
 
 type UpdateFn = ReturnType<typeof useUpdatePlan>;
 
-function OngoingTripCard({ trip, updatePlan }: { trip: TripPlan; updatePlan: UpdateFn }) {
+function OngoingTripCard({ trip, updatePlan, booking }: { trip: TripPlan; updatePlan: UpdateFn; booking?: Booking }) {
   const [local, setLocal] = useState<TripPlan>({ ...trip });
   const [saving, setSaving] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -295,6 +320,12 @@ function OngoingTripCard({ trip, updatePlan }: { trip: TripPlan; updatePlan: Upd
           <Flame size={11} className="animate-pulse" /> Ongoing
         </span>
       </div>
+
+      {booking && (
+        <div className="border-b border-border px-5 py-3">
+          <BookingMeta booking={booking} />
+        </div>
+      )}
 
       <div className="px-5 py-5 space-y-6">
         {/* ── Trip progress ── */}
@@ -532,7 +563,7 @@ function OngoingTripCard({ trip, updatePlan }: { trip: TripPlan; updatePlan: Upd
 
 /* ── Ongoing tab ─────────────────────────────────────────────────────────── */
 
-function OngoingTab({ trips }: { trips: TripPlan[] }) {
+function OngoingTab({ trips, bookingById }: { trips: TripPlan[]; bookingById: BookingById }) {
   const updatePlan = useUpdatePlan();
 
   if (trips.length === 0) {
@@ -548,7 +579,7 @@ function OngoingTab({ trips }: { trips: TripPlan[] }) {
   return (
     <div className="space-y-6">
       {trips.map((trip) => (
-        <OngoingTripCard key={trip.id} trip={trip} updatePlan={updatePlan} />
+        <OngoingTripCard key={trip.id} trip={trip} updatePlan={updatePlan} booking={bookingById.get(trip.bookingId)} />
       ))}
     </div>
   );
@@ -1028,12 +1059,27 @@ function AnalyticsTab({ allTrips }: { allTrips: TripPlan[] }) {
 
 export default function TrackingPage() {
   const { data: allTrips = [], isLoading } = usePlans();
+  const { data: allBookings = [] } = useBookings();
   const [tab, setTab]     = useState<Tab>("upcoming");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
-  const upcoming  = allTrips.filter((t) => t.status === "planned" || t.status === "ready");
+  const bookingById: BookingById = useMemo(
+    () => new Map(allBookings.map((b) => [b.id, b])),
+    [allBookings]
+  );
+
+  // Tracking only shows trips that have actually been booked — a plan that's
+  // merely "Ready" still belongs in the Planner until it's booked. Requiring
+  // a real, non-cancelled Booking to exist (not just "not cancelled", which
+  // would also be true for a missing booking) closes the gap where a plan's
+  // status was set to "booked" without ever going through createBooking.
+  const upcoming  = allTrips.filter((t) => {
+    if (t.status !== "booked") return false;
+    const booking = bookingById.get(t.bookingId);
+    return !!booking && booking.status !== "cancelled";
+  });
   const ongoing   = allTrips.filter((t) => t.status === "ongoing");
   const completed = allTrips.filter((t) => t.status === "completed" || t.status === "cancelled");
 
@@ -1084,7 +1130,7 @@ export default function TrackingPage() {
         <div className="rounded-2xl border border-border bg-white p-6 shadow-soft">
           <p className="mb-4 font-display font-semibold text-brand-600">How it works</p>
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            {["Plan trip", "Build itinerary", "Mark Ready", "Start trip", "Track progress", "Complete", "View history"].map(
+            {["Plan trip", "Build itinerary", "Mark Ready", "Book trip", "Start trip", "Track progress", "Complete", "View history"].map(
               (step, i, arr) => (
                 <span key={step} className="flex items-center gap-2">
                   <span className="rounded-full bg-brand-50 px-3 py-1 font-medium text-brand-600">{step}</span>
@@ -1127,8 +1173,8 @@ export default function TrackingPage() {
       </div>
 
       {/* Tab content */}
-      {tab === "upcoming"  && <UpcomingTab  trips={upcoming}  />}
-      {tab === "ongoing"   && <OngoingTab   trips={ongoing}   />}
+      {tab === "upcoming"  && <UpcomingTab  trips={upcoming}  bookingById={bookingById} />}
+      {tab === "ongoing"   && <OngoingTab   trips={ongoing}   bookingById={bookingById} />}
       {tab === "completed" && <CompletedTab trips={completed} />}
       {tab === "analytics" && <AnalyticsTab allTrips={allTrips} />}
     </div>
