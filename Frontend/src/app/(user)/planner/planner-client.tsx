@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Plus, FileEdit, CalendarCheck, CheckCircle2, Map } from "lucide-react";
+import { Plus, FileEdit, CalendarCheck, CheckCircle2, Map, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/cards/stat-card";
 import { usePlans } from "@/hooks/use-content";
-import type { TripPlan } from "@/types";
+import type { District, TripPlan } from "@/types";
 import { TripCard } from "./trip-card";
 import { CreateTripModal } from "./create-trip-modal";
 import { TripWorkspace } from "./trip-workspace";
+import { DistrictPicker } from "./district-picker";
 
 const PLANNING_STATUSES: TripPlan["status"][] = ["draft", "planned", "ready"];
 
@@ -33,11 +34,41 @@ function TripSection({
   );
 }
 
+/** Full-screen Step 1 of the guided flow: choose a starting district before
+ *  anything else. Once picked, CreateTripModal takes over for the trip's
+ *  name/type/travelers/dates/budget with the district already attached. */
+function DistrictPickStep({ onClose, onSelect }: { onClose: () => void; onSelect: (district: District) => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      {/* Fixed-height shell with its own internal scroll (not the whole overlay) —
+          77 districts is taller than most viewports, and a flex-centered overlay
+          that scrolls as a whole starts scrolled to the vertical middle of that
+          content, hiding the search bar above the fold. Capping the height here
+          and scrolling only the inner content keeps the search bar reachable
+          from the top and matches EntityFormModal's established pattern. */}
+      <div className="relative flex max-h-[85vh] w-full max-w-4xl flex-col rounded-3xl bg-white shadow-2xl">
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-5 top-5 z-10 rounded-lg bg-white/90 p-1.5 text-muted-foreground shadow-soft transition hover:bg-muted hover:text-foreground"
+        >
+          <X size={18} />
+        </button>
+        <div className="overflow-y-auto p-6 sm:p-8">
+          <DistrictPicker onSelect={onSelect} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PlannerClient() {
   const { data: allPlans = [], isLoading } = usePlans();
   const [view, setView]             = useState<"list" | "workspace">("list");
   const [activePlan, setActivePlan] = useState<TripPlan | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
+  const [openedFresh, setOpenedFresh] = useState(false);
+  const [showDistrictPick, setShowDistrictPick] = useState(false);
+  const [chosenDistrict, setChosenDistrict] = useState<District | null>(null);
   const [mounted, setMounted]       = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
@@ -57,8 +88,9 @@ export function PlannerClient() {
   const planned = sortByDate(plans.filter((p) => p.status === "planned"));
   const drafts  = sortByDate(plans.filter((p) => p.status === "draft"));
 
-  const openWorkspace = (plan: TripPlan) => {
+  const openWorkspace = (plan: TripPlan, fresh = false) => {
     setActivePlan(plan);
+    setOpenedFresh(fresh);
     setView("workspace");
   };
 
@@ -76,6 +108,7 @@ export function PlannerClient() {
     return (
       <TripWorkspace
         plan={activePlan}
+        initialTab={openedFresh ? "discover" : "itinerary"}
         onBack={() => { setView("list"); setActivePlan(null); }}
         onUpdate={(updated) => setActivePlan(updated)}
       />
@@ -90,10 +123,10 @@ export function PlannerClient() {
           <p className="kicker text-muted-foreground">Future adventures</p>
           <h1 className="mt-1 font-display text-3xl font-bold text-brand-600">Trip Planner</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Build your itinerary, pack your bags, and plan your budget — before you leave.
+            Pick a district, discover everything there is to do, and build your itinerary — before you leave.
           </p>
         </div>
-        <Button variant="accent" onClick={() => setShowCreate(true)}>
+        <Button variant="accent" onClick={() => setShowDistrictPick(true)}>
           <Plus size={16} /> Plan a trip
         </Button>
       </div>
@@ -113,11 +146,11 @@ export function PlannerClient() {
           </div>
           <h3 className="mt-6 font-display text-xl font-bold text-brand-600">Start planning your next adventure</h3>
           <p className="mt-2 max-w-md text-sm text-muted-foreground">
-            Create a trip to build a day-by-day itinerary, track your packing list, and plan your
-            budget — all before you leave home.
+            Pick a district to see everything there is to do, build a day-by-day itinerary, track your
+            packing list, and plan your budget — all before you leave home.
           </p>
-          <Button variant="accent" className="mt-6" onClick={() => setShowCreate(true)}>
-            <Plus size={16} /> Create first trip
+          <Button variant="accent" className="mt-6" onClick={() => setShowDistrictPick(true)}>
+            <Plus size={16} /> Plan your first trip
           </Button>
         </div>
       ) : (
@@ -128,10 +161,19 @@ export function PlannerClient() {
         </div>
       )}
 
-      {showCreate && (
+      {showDistrictPick && (
+        <DistrictPickStep
+          onClose={() => setShowDistrictPick(false)}
+          onSelect={(district) => { setChosenDistrict(district); setShowDistrictPick(false); }}
+        />
+      )}
+
+      {chosenDistrict && (
         <CreateTripModal
-          onClose={() => setShowCreate(false)}
-          onCreated={(plan) => { setShowCreate(false); openWorkspace(plan); }}
+          initialDistrictId={chosenDistrict.id}
+          initialTitle={`Trip to ${chosenDistrict.name}`}
+          onClose={() => setChosenDistrict(null)}
+          onCreated={(plan) => { setChosenDistrict(null); openWorkspace(plan, true); }}
         />
       )}
     </div>

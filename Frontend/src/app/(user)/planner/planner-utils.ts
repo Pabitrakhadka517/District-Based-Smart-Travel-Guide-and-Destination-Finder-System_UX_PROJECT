@@ -1,7 +1,31 @@
 import { Compass, Mountain, Landmark, Sun, Users, TreePine, Gem, Wallet } from "lucide-react";
-import type { TravelType } from "@/types";
+import type { TravelType, TripPlan } from "@/types";
 
 type Icon = React.ComponentType<{ size?: number; className?: string }>;
+
+/** A plan can be booked once it's Ready, isn't already linked to a booking,
+ *  and has at least one destination and a start date — the same conditions
+ *  createBooking enforces server-side. Used everywhere a "can this plan be
+ *  booked?" decision is made (destination page CTA, the booking picker, the
+ *  Trip Planner's "Book This Trip" button) so they can't drift out of sync. */
+export function isBookablePlan(plan: TripPlan): boolean {
+  return (
+    plan.status === "ready" &&
+    !plan.bookingId &&
+    plan.destinationIds.length > 0 &&
+    !!plan.startDate &&
+    plan.startDate >= new Date().toISOString().slice(0, 10)
+  );
+}
+
+/** A plan's planning details (destination, dates, budget, travellers…) are
+ *  editable only up to "ready" — anything past that means a Booking exists
+ *  (or the trip already finished), and the backend rejects changes to those
+ *  fields (see updateTrip in planner.controller.ts). Travel Tracking, not
+ *  the Planner, owns what happens to the plan from here. */
+export function isLockedPlan(status: TripPlan["status"]): boolean {
+  return status !== "draft" && status !== "planned" && status !== "ready";
+}
 
 export const TRAVEL_TYPE_CONFIG: Record<
   TravelType,
@@ -21,6 +45,7 @@ export const STATUS_STYLE: Record<string, { badge: string; label: string; dot: s
   draft:     { badge: "bg-muted text-muted-foreground border-border",        label: "Draft",     dot: "bg-muted-foreground"  },
   planned:   { badge: "bg-brand-50 text-brand-600 border-brand-200",         label: "Planning",  dot: "bg-brand-400"         },
   ready:     { badge: "bg-success/10 text-success border-success/30",        label: "Ready",     dot: "bg-success"           },
+  booked:    { badge: "bg-brand-100 text-brand-700 border-brand-300",       label: "Booked",         dot: "bg-brand-600"         },
   ongoing:   { badge: "bg-accent/10 text-accent border-accent/30",           label: "Ongoing",        dot: "bg-accent"            },
   completed: { badge: "bg-secondary/10 text-secondary border-secondary/30",  label: "Completed",      dot: "bg-secondary"         },
   cancelled: { badge: "bg-destructive/10 text-destructive border-destructive/20", label: "Cancelled",  dot: "bg-destructive"       },

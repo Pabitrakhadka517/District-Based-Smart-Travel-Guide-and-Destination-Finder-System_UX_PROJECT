@@ -18,16 +18,22 @@ interface Props {
   onCreated: (plan: TripPlan) => void;
   /** Pre-select destinations (e.g. "add to trip" from the wishlist page). */
   initialDestinationIds?: string[];
+  /** Pre-chosen starting district (from the guided Step-1 district picker). */
+  initialDistrictId?: string;
+  /** Pre-fills the trip name, e.g. "Trip to Bhaktapur" after picking a district. */
+  initialTitle?: string;
 }
 
 const TRAVEL_TYPES = Object.keys(TRAVEL_TYPE_CONFIG) as TravelType[];
 
-export function CreateTripModal({ onClose, onCreated, initialDestinationIds = [] }: Props) {
+export function CreateTripModal({
+  onClose, onCreated, initialDestinationIds = [], initialDistrictId = "", initialTitle = "",
+}: Props) {
   const createPlan = useCreatePlan();
   const [step, setStep] = useState<1 | 2>(1);
 
   /* Step 1 */
-  const [title, setTitle]         = useState("");
+  const [title, setTitle]         = useState(initialTitle);
   const [travelType, setType]     = useState<TravelType>("Trekking");
   const [travelers, setTravelers] = useState(2);
 
@@ -69,6 +75,7 @@ export function CreateTripModal({ onClose, onCreated, initialDestinationIds = []
       title: title.trim(),
       travelType,
       travelers,
+      districtId: initialDistrictId,
       destinationIds: initialDestinationIds,
       startDate,
       endDate,

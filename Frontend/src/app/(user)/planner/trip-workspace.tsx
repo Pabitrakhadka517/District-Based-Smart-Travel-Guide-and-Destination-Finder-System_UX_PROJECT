@@ -1,49 +1,58 @@
 "use client";
 import { useState, useCallback, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
   ArrowLeft, Save, Trash2, Loader2, ChevronDown,
   CalendarDays, CheckSquare, Wallet, MapPin, FileText,
   Search, X, Cloud, Star, CheckCircle, Users, Clock,
+  CalendarCheck, Hotel, Bus, Lock, Compass, ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CloudinaryImage } from "@/components/shared/cloudinary-image";
 import { cn } from "@/lib/utils";
 import {
-  useUpdatePlan, useDeletePlan, useDestinations,
+  useUpdatePlan, useDeletePlan, useDestinations, useDistricts, useDistrictFull,
   useTrendingRecommendations, useWeather,
 } from "@/hooks/use-content";
 import { WeatherCard } from "@/components/cards/weather-card";
+import { toast } from "@/store/toast-store";
 import type {
-  TripPlan, TripDay, ChecklistItem, BudgetBreakdown, Destination,
+  TripPlan, TripDay, ChecklistItem, BudgetBreakdown, Destination, District,
+  AccommodationType, TransportPreference,
 } from "@/types";
-import { TRAVEL_TYPE_CONFIG, STATUS_STYLE, dateRange, fmtDay } from "./planner-utils";
+import { TRAVEL_TYPE_CONFIG, STATUS_STYLE, dateRange, fmtDay, isBookablePlan, isLockedPlan } from "./planner-utils";
 import { ItineraryBuilder } from "./itinerary-builder";
 import { TripChecklist } from "./trip-checklist";
 import { BudgetPlanner } from "./budget-planner";
+import { DistrictPicker } from "./district-picker";
+import { DistrictDiscovery } from "./district-discovery";
+import { TripSummary } from "./trip-summary";
 
 interface Props {
   plan: TripPlan;
   onBack: () => void;
   onUpdate: (plan: TripPlan) => void;
+  initialTab?: Tab;
 }
 
-type Tab = "itinerary" | "destinations" | "checklist" | "budget" | "weather" | "notes";
+type Tab = "itinerary" | "discover" | "checklist" | "budget" | "weather" | "notes" | "summary";
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ size?: number }> }[] = [
+  { id: "discover",     label: "Discover",     icon: Compass       },
   { id: "itinerary",    label: "Itinerary",    icon: CalendarDays },
-  { id: "destinations", label: "Destinations", icon: MapPin        },
   { id: "checklist",    label: "Checklist",    icon: CheckSquare   },
   { id: "budget",       label: "Budget",       icon: Wallet    },
   { id: "weather",      label: "Weather",      icon: Cloud         },
   { id: "notes",        label: "Notes",        icon: FileText      },
+  { id: "summary",      label: "Summary",      icon: ClipboardCheck },
 ];
 
 const STATUS_OPTIONS = ["draft", "planned", "ready"] as const;
 
-export function TripWorkspace({ plan, onBack, onUpdate }: Props) {
+export function TripWorkspace({ plan, onBack, onUpdate, initialTab = "itinerary" }: Props) {
   const [local, setLocal]             = useState<TripPlan>({ ...plan });
-  const [tab, setTab]                 = useState<Tab>("itinerary");
+  const [tab, setTab]                 = useState<Tab>(initialTab);
   const [dirty, setDirty]             = useState(false);
   const [savedFlash, setSavedFlash]   = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -51,9 +60,18 @@ export function TripWorkspace({ plan, onBack, onUpdate }: Props) {
   const updatePlan = useUpdatePlan();
   const deletePlan = useDeletePlan();
   const { data: allDestinations = [] } = useDestinations();
+  const { data: allDistricts = [] } = useDistricts();
 
   const tripDestinations = allDestinations.filter((d) => local.destinationIds.includes(d.id));
   const availableToAdd   = allDestinations.filter((d) => !local.destinationIds.includes(d.id));
+
+  // TripPlan stores the district's id (matching every other content-linkage
+  // field), but the district API is slug-keyed — resolve it once here so
+  // Discover/Summary/Itinerary can all share the same district-full fetch.
+  const districtSlug = allDistricts.find((d) => d.id === local.districtId)?.slug ?? "";
+  const { data: districtFull } = useDistrictFull(districtSlug);
+  const tripAttractions = (districtFull?.attractions ?? []).filter((a) => local.attractionIds.includes(a.id));
+  const tripTreks       = (districtFull?.treks ?? []).filter((t) => local.trekIds.includes(t.id));
 
   /* Derived trip stats */
   const tripDays =
@@ -69,13 +87,27 @@ export function TripWorkspace({ plan, onBack, onUpdate }: Props) {
   const addDestination    = (id: string) => patch("destinationIds", [...local.destinationIds, id]);
   const removeDestination = (id: string) => patch("destinationIds", local.destinationIds.filter((x) => x !== id));
 
+  const toggleDiscoveryItem = (kind: "destination" | "attraction" | "trek", id: string) => {
+    const field = kind === "destination" ? "destinationIds" : kind === "attraction" ? "attractionIds" : "trekIds";
+    const current = local[field];
+    patch(field, current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
+  };
+
+  const chooseDistrict = (district: District) => patch("districtId", district.id);
+
   const handleSave = useCallback(async () => {
     if (updatePlan.isPending) return;
-    const updated = await updatePlan.mutateAsync(local);
-    setDirty(false);
-    setSavedFlash(true);
-    setTimeout(() => setSavedFlash(false), 2000);
-    onUpdate(updated);
+    try {
+      const updated = await updatePlan.mutateAsync(local);
+      setDirty(false);
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 2000);
+      onUpdate(updated);
+    } catch (err) {
+      // Leave `dirty` true so autosave retries and the change isn't lost —
+      // just tell the user it didn't save instead of crashing the page.
+      toast.error(err instanceof Error ? err.message : "Couldn't save your trip. Please try again.");
+    }
   }, [local, updatePlan, onUpdate]);
 
   /* Auto-save: 3s debounce after last change */
@@ -106,6 +138,9 @@ export function TripWorkspace({ plan, onBack, onUpdate }: Props) {
   const Icon   = cfg.icon;
   const status = STATUS_STYLE[local.status] ?? STATUS_STYLE.planned;
 
+  const canBook = isBookablePlan(local) && !dirty;
+  const locked  = isLockedPlan(local.status);
+
   return (
     <div className="space-y-6">
       {/* Top bar */}
@@ -122,27 +157,48 @@ export function TripWorkspace({ plan, onBack, onUpdate }: Props) {
           <span className={cn("text-xs font-semibold", cfg.color)}>{cfg.label}</span>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          {savedFlash && !dirty && (
-            <span className="flex items-center gap-1 text-xs text-success">
-              <CheckCircle size={12} /> Saved
+          {locked ? (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Lock size={12} /> Locked — see Travel Tracking
             </span>
+          ) : (
+            <>
+              {savedFlash && !dirty && (
+                <span className="flex items-center gap-1 text-xs text-success">
+                  <CheckCircle size={12} /> Saved
+                </span>
+              )}
+              {dirty && !updatePlan.isPending && (
+                <span className="text-xs text-muted-foreground">Unsaved changes</span>
+              )}
+              {isBookablePlan(local) && (
+                <Link
+                  href={canBook ? `/booking?planId=${local.id}` : "#"}
+                  title={dirty ? "Save your changes before booking" : undefined}
+                  aria-disabled={!canBook}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-xl bg-secondary px-3 py-1.5 text-xs font-semibold text-secondary-foreground transition",
+                    canBook ? "hover:brightness-105" : "pointer-events-none opacity-40"
+                  )}
+                >
+                  <CalendarCheck size={13} /> Book This Trip
+                </Link>
+              )}
+              <Button
+                variant="accent"
+                size="sm"
+                title="Save (Ctrl+S)"
+                disabled={updatePlan.isPending}
+                onClick={handleSave}
+              >
+                {updatePlan.isPending ? (
+                  <><Loader2 size={13} className="animate-spin" /> Saving…</>
+                ) : (
+                  <><Save size={13} /> Save</>
+                )}
+              </Button>
+            </>
           )}
-          {dirty && !updatePlan.isPending && (
-            <span className="text-xs text-muted-foreground">Unsaved changes</span>
-          )}
-          <Button
-            variant="accent"
-            size="sm"
-            title="Save (Ctrl+S)"
-            disabled={updatePlan.isPending}
-            onClick={handleSave}
-          >
-            {updatePlan.isPending ? (
-              <><Loader2 size={13} className="animate-spin" /> Saving…</>
-            ) : (
-              <><Save size={13} /> Save</>
-            )}
-          </Button>
         </div>
       </div>
 
@@ -152,16 +208,23 @@ export function TripWorkspace({ plan, onBack, onUpdate }: Props) {
           <Input
             value={local.title}
             onChange={(e) => patch("title", e.target.value)}
-            className="flex-1 font-display text-xl font-bold border-0 shadow-none focus-visible:ring-0 p-0 h-auto"
+            readOnly={locked}
+            disabled={locked}
+            className="flex-1 font-display text-xl font-bold border-0 shadow-none focus-visible:ring-0 p-0 h-auto disabled:opacity-100 disabled:cursor-default"
           />
-          {local.status === "completed" || local.status === "ongoing" ? (
-            // Once a trip is underway or finished, its status is driven by the
-            // Tracking page ("Start trip" / "Mark complete"), not this form —
-            // showing an editable draft/planned/ready dropdown here would lie
-            // about the trip's real status and (for "completed") the server
-            // rejects the change anyway.
+          {locked ? (
+            // Once a trip is booked, underway, finished, or cancelled, its
+            // status is driven by the booking/Tracking flow ("Book This Trip" /
+            // "Start trip" / "Mark complete"), not this form — showing an
+            // editable draft/planned/ready dropdown here would lie about the
+            // trip's real status, and the server rejects the change anyway.
             <span
-              title={local.status === "completed" ? "Completed trips can't change status here — see Tracking" : "Trip is in progress — managed from Tracking"}
+              title={
+                local.status === "completed" ? "Completed trips can't change status here — see Tracking"
+                : local.status === "cancelled" ? "This trip was cancelled"
+                : local.status === "booked" ? "This trip has been booked — see My Bookings / Travel Tracking"
+                : "Trip is in progress — managed from Tracking"
+              }
               className={cn("rounded-full border px-3 py-1.5 text-xs font-medium", status.badge)}
             >
               {STATUS_STYLE[local.status].label}
@@ -215,75 +278,144 @@ export function TripWorkspace({ plan, onBack, onUpdate }: Props) {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto rounded-2xl border border-border bg-muted p-1 scrollbar-hide">
-        {TABS.map(({ id, label, icon: TabIcon }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={cn(
-              "flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-all",
-              tab === id
-                ? "bg-white text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <TabIcon size={14} />
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab panels */}
-      {tab === "itinerary" && (
-        <ItineraryBuilder
-          plan={local}
-          onChange={(days: TripDay[]) => patch("itinerary", days)}
-        />
-      )}
-
-      {tab === "destinations" && (
-        <DestinationsTab
-          tripDestinations={tripDestinations}
-          available={availableToAdd}
-          onAdd={addDestination}
-          onRemove={removeDestination}
-        />
-      )}
-
-      {tab === "checklist" && (
-        <TripChecklist
-          items={local.checklist ?? []}
-          onChange={(items: ChecklistItem[]) => patch("checklist", items)}
-        />
-      )}
-
-      {tab === "budget" && (
-        <BudgetPlanner
-          budget={local.budget}
-          breakdown={local.budgetBreakdown ?? { accommodation: 0, food: 0, transportation: 0, activities: 0, other: 0 }}
-          travelers={local.travelers ?? 1}
-          tripDays={tripDays || 1}
-          onBudgetChange={(b) => patch("budget", b)}
-          onBreakdownChange={(bd: BudgetBreakdown) => patch("budgetBreakdown", bd)}
-        />
-      )}
-
-      {tab === "weather" && (
-        <WeatherTab tripDestinations={tripDestinations} />
-      )}
-
-      {tab === "notes" && (
-        <div className="rounded-2xl border border-border bg-white p-5 shadow-soft">
-          <label className="mb-3 block text-sm font-semibold text-foreground">Trip notes</label>
-          <textarea
-            value={local.notes ?? ""}
-            onChange={(e) => patch("notes", e.target.value)}
-            rows={12}
-            placeholder="Jot down ideas, reminders, accommodation details, visa requirements, emergency contacts…"
-            className="w-full resize-y rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          />
+      {locked ? (
+        /* Once booked (or further along), planning details are frozen — the
+         * Planner stops being an editing surface and Travel Tracking takes
+         * over for everything that happens next. */
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-white/60 px-8 py-14 text-center">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-muted text-muted-foreground">
+            <Lock size={24} />
+          </div>
+          <h3 className="font-display text-lg font-bold text-foreground">
+            {local.status === "cancelled" ? "This trip was cancelled" : "This trip has been booked"}
+          </h3>
+          <p className="max-w-md text-sm text-muted-foreground">
+            {local.status === "cancelled"
+              ? "Cancelled trip plans can't be edited. Create a new trip plan to start again."
+              : "Destination, dates, budget and traveller details are locked in so they always match what was actually reserved. To make changes, cancel the booking first, or create a new trip plan."}
+          </p>
+          {local.status !== "cancelled" && (
+            <Link href="/tracking" className="mt-2">
+              <Button variant="accent" size="sm">Go to Travel Tracking</Button>
+            </Link>
+          )}
         </div>
+      ) : (
+        <>
+          {/* Tabs */}
+          <div className="flex gap-1 overflow-x-auto rounded-2xl border border-border bg-muted p-1 scrollbar-hide">
+            {TABS.map(({ id, label, icon: TabIcon }) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className={cn(
+                  "flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-all",
+                  tab === id
+                    ? "bg-white text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <TabIcon size={14} />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab panels */}
+          {tab === "discover" && (
+            local.districtId ? (
+              <div className="space-y-6">
+                <DistrictDiscovery
+                  districtSlug={districtSlug}
+                  selection={{
+                    destinationIds: local.destinationIds,
+                    attractionIds: local.attractionIds,
+                    trekIds: local.trekIds,
+                  }}
+                  onToggle={toggleDiscoveryItem}
+                />
+                <details className="rounded-2xl border border-border bg-white shadow-soft">
+                  <summary className="cursor-pointer px-5 py-3.5 text-sm font-semibold text-foreground">
+                    Add a destination from elsewhere ({availableToAdd.length} more)
+                  </summary>
+                  <div className="border-t border-border p-5">
+                    <DestinationsTab
+                      tripDestinations={tripDestinations}
+                      available={availableToAdd}
+                      onAdd={addDestination}
+                      onRemove={removeDestination}
+                    />
+                  </div>
+                </details>
+              </div>
+            ) : (
+              <DistrictPicker onSelect={chooseDistrict} />
+            )
+          )}
+
+          {tab === "itinerary" && (
+            <ItineraryBuilder
+              plan={local}
+              destinations={tripDestinations}
+              attractions={tripAttractions}
+              treks={tripTreks}
+              onChange={(days: TripDay[]) => patch("itinerary", days)}
+            />
+          )}
+
+          {tab === "checklist" && (
+            <TripChecklist
+              items={local.checklist ?? []}
+              onChange={(items: ChecklistItem[]) => patch("checklist", items)}
+            />
+          )}
+
+          {tab === "budget" && (
+            <div className="space-y-5">
+              <PreferencesCard
+                accommodationPreference={local.accommodationPreference}
+                transportPreference={local.transportPreference}
+                onAccommodationChange={(v) => patch("accommodationPreference", v)}
+                onTransportChange={(v) => patch("transportPreference", v)}
+              />
+              <BudgetPlanner
+                budget={local.budget}
+                breakdown={local.budgetBreakdown ?? { accommodation: 0, food: 0, transportation: 0, activities: 0, other: 0 }}
+                travelers={local.travelers ?? 1}
+                tripDays={tripDays || 1}
+                onBudgetChange={(b) => patch("budget", b)}
+                onBreakdownChange={(bd: BudgetBreakdown) => patch("budgetBreakdown", bd)}
+              />
+            </div>
+          )}
+
+          {tab === "weather" && (
+            <WeatherTab tripDestinations={tripDestinations} />
+          )}
+
+          {tab === "notes" && (
+            <div className="rounded-2xl border border-border bg-white p-5 shadow-soft">
+              <label className="mb-3 block text-sm font-semibold text-foreground">Trip notes</label>
+              <textarea
+                value={local.notes ?? ""}
+                onChange={(e) => patch("notes", e.target.value)}
+                rows={12}
+                placeholder="Jot down ideas, reminders, accommodation details, visa requirements, emergency contacts…"
+                className="w-full resize-y rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          )}
+
+          {tab === "summary" && (
+            local.districtId ? (
+              <TripSummary plan={local} districtSlug={districtSlug} />
+            ) : (
+              <p className="rounded-2xl border border-dashed border-border bg-white/60 p-10 text-center text-sm text-muted-foreground">
+                Pick a district in the Discover tab first — the summary is built from what you select there.
+              </p>
+            )
+          )}
+        </>
       )}
 
       {/* Delete zone */}
@@ -292,6 +424,7 @@ export function TripWorkspace({ plan, onBack, onUpdate }: Props) {
           <div className="flex flex-wrap items-center gap-3">
             <p className="flex-1 text-sm text-foreground">
               Delete <strong>{local.title}</strong>? This cannot be undone.
+              {local.bookingId && " This trip has an active booking — deleting it will also cancel that booking."}
             </p>
             <Button
               variant="outline"
@@ -315,6 +448,76 @@ export function TripWorkspace({ plan, onBack, onUpdate }: Props) {
             <Trash2 size={14} /> Delete this trip
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ---- Booking preferences ---- */
+// Captured once here so the booking form later never has to ask again.
+
+const ACCOMMODATION_OPTIONS: AccommodationType[] = ["Budget", "Standard", "Luxury"];
+const TRANSPORT_OPTIONS: TransportPreference[] = ["Local Bus", "Private Jeep", "Domestic Flight"];
+
+function PreferencesCard({
+  accommodationPreference, transportPreference, onAccommodationChange, onTransportChange,
+}: {
+  accommodationPreference: AccommodationType;
+  transportPreference: TransportPreference;
+  onAccommodationChange: (v: AccommodationType) => void;
+  onTransportChange: (v: TransportPreference) => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-white p-5 shadow-soft">
+      <p className="text-sm font-semibold text-foreground">Booking preferences</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Used to pre-fill your booking when this trip is ready — you can still change it there.
+      </p>
+
+      <div className="mt-4 space-y-2">
+        <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <Hotel size={13} /> Accommodation
+        </label>
+        <div className="grid grid-cols-3 gap-2">
+          {ACCOMMODATION_OPTIONS.map((o) => (
+            <button
+              key={o}
+              type="button"
+              onClick={() => onAccommodationChange(o)}
+              className={cn(
+                "rounded-xl border-2 px-3 py-2 text-xs font-medium transition-all",
+                accommodationPreference === o
+                  ? "border-brand-600 bg-brand-50 text-brand-600"
+                  : "border-border bg-white text-muted-foreground hover:border-brand-200"
+              )}
+            >
+              {o}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <Bus size={13} /> Transport
+        </label>
+        <div className="grid grid-cols-3 gap-2">
+          {TRANSPORT_OPTIONS.map((o) => (
+            <button
+              key={o}
+              type="button"
+              onClick={() => onTransportChange(o)}
+              className={cn(
+                "rounded-xl border-2 px-3 py-2 text-xs font-medium transition-all",
+                transportPreference === o
+                  ? "border-brand-600 bg-brand-50 text-brand-600"
+                  : "border-border bg-white text-muted-foreground hover:border-brand-200"
+              )}
+            >
+              {o}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
