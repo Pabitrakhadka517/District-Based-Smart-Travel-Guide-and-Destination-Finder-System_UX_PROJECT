@@ -72,12 +72,12 @@ export function RegisterForm() {
   const onSubmit = async (data: FormValues) => {
     setApiError(null);
     try {
-      const { token, user } = await apiPost<{ token: string; user: User }>("/auth/register", {
+      const { user } = await apiPost<{ user: User }>("/auth/register", {
         name:     data.name,
         email:    data.email,
         password: data.password,
       });
-      setAuth(token, user);
+      setAuth(user);
       router.push("/dashboard");
     } catch (err) {
       setApiError(err instanceof Error ? err.message : "Registration failed. Please try again.");

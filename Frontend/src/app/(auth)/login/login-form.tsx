@@ -47,11 +47,11 @@ export function LoginForm() {
   const onSubmit = async (data: FormValues) => {
     setApiError(null);
     try {
-      const { token, user } = await apiPost<{ token: string; user: User }>(
+      const { user } = await apiPost<{ user: User }>(
         "/auth/login",
         { email: data.email, password: data.password, rememberMe: data.rememberMe ?? false }
       );
-      setAuth(token, user, data.rememberMe ?? false);
+      setAuth(user, data.rememberMe ?? false);
       const raw = searchParams.get("redirect") ?? "";
       const safeRedirect = raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
       router.push(safeRedirect ?? (user.role === "admin" ? "/admin" : "/dashboard"));
