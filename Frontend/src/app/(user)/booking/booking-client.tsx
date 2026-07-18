@@ -15,7 +15,6 @@ import { BookingConfirmation } from "./booking-confirmation";
 import {
   useDestinations, useGuides, usePlans, useBookings, useCreateBooking, useCancelBooking,
 } from "@/hooks/use-content";
-import { useBookingStatusNotifications } from "@/hooks/use-booking-status-notifications";
 import { isBookablePlan } from "@/app/(user)/planner/planner-utils";
 import { useAuth } from "@/store/auth-store";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
@@ -132,12 +131,6 @@ export function BookingClient() {
     () => Object.fromEntries(destinations.map((d) => [d.id, d])),
     [destinations]
   );
-  const destinationNameById = useMemo(
-    () => Object.fromEntries(destinations.map((d) => [d.id, d.name])),
-    [destinations]
-  );
-  useBookingStatusNotifications(bookings, destinationNameById);
-
   const confirmedBooking = confirmedId ? bookings.find((b) => b.id === confirmedId) ?? null : null;
 
   const canSave =

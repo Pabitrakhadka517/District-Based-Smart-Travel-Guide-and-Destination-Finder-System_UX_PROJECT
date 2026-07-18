@@ -323,6 +323,16 @@ export interface Booking {
   createdAt: string;
 }
 
+export interface Notification {
+  id: string;
+  userId: string;
+  type: "booking_confirmed" | "booking_cancelled" | "trip_ready" | "booking_pending" | "review_pending";
+  message: string;
+  link: string;
+  read: boolean;
+  createdAt: string;
+}
+
 export interface GuideArticle {
   id: string;
   slug: string;

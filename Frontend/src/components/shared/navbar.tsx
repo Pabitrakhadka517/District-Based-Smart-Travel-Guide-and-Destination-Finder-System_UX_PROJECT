@@ -5,10 +5,11 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Heart, Menu, ChevronDown, User, X, LogOut } from "lucide-react";
 import { Logo } from "./logo";
 import { ConfirmDialog } from "./confirm-dialog";
+import { NotificationBell } from "./notification-bell";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/store/auth-store";
-import { useLogout } from "@/hooks/use-content";
+import { useLogout, useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "@/hooks/use-content";
 
 const explore = [
   { href: "/districts",                       label: "All Districts",       desc: "Browse all 77 regions of Nepal" },
@@ -49,6 +50,10 @@ export function Navbar() {
   const { isLoggedIn, isAdmin, hasHydrated } = useAuth();
   const logout = useLogout();
   const [confirmLogout, setConfirmLogout] = useState(false);
+
+  const { data: notifData } = useNotifications();
+  const markNotificationRead = useMarkNotificationRead();
+  const markAllNotificationsRead = useMarkAllNotificationsRead();
 
   const exploreBtnRef  = useRef<HTMLButtonElement>(null);
   const exploreMenuRef = useRef<HTMLDivElement>(null);
@@ -232,6 +237,12 @@ export function Navbar() {
               <Link href={admin ? "/admin" : "/dashboard"}>
                 <Button variant="ghost" size="icon" aria-label="Go to dashboard"><User size={18} aria-hidden="true" /></Button>
               </Link>
+              <NotificationBell
+                items={notifData?.items ?? []}
+                unreadCount={notifData?.unreadCount ?? 0}
+                onMarkRead={(id) => markNotificationRead.mutate(id)}
+                onMarkAllRead={() => markAllNotificationsRead.mutate()}
+              />
               <Button
                 variant="outline"
                 size="sm"
@@ -249,6 +260,20 @@ export function Navbar() {
             </>
           )}
         </div>
+
+        {/* Notification bell stays visible below the lg breakpoint too — the
+            desktop copy above lives inside the `hidden lg:flex` icon row, so
+            this un-gated instance is what mobile viewports actually render. */}
+        {loggedIn && (
+          <div className="lg:hidden">
+            <NotificationBell
+              items={notifData?.items ?? []}
+              unreadCount={notifData?.unreadCount ?? 0}
+              onMarkRead={(id) => markNotificationRead.mutate(id)}
+              onMarkAllRead={() => markAllNotificationsRead.mutate()}
+            />
+          </div>
+        )}
 
         {/* Mobile menu toggle */}
         <button
