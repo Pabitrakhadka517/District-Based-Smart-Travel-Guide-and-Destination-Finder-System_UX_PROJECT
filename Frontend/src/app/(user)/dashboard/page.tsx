@@ -87,7 +87,8 @@ export default function DashboardPage() {
   const ongoing   = plans.filter((t) => t.status === "ongoing");
   const planned   = plans.filter((t) => t.status === "planned");
   const ready     = plans.filter((t) => t.status === "ready");
-  const upcomingCount   = planned.length + ready.length + ongoing.length;
+  const booked    = plans.filter((t) => t.status === "booked");
+  const upcomingCount   = planned.length + ready.length + booked.length + ongoing.length;
   const visitedCount    = new Set(completed.flatMap((t) => t.destinationIds)).size;
   const firstName = mounted ? (user?.name?.split(" ")[0] ?? "Traveller") : "Traveller";
 
@@ -199,11 +200,12 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-3">
               {plans.slice(0, 5).map((t) => {
-                const isTracking = t.status === "ongoing" || t.status === "completed" || t.status === "cancelled";
+                const isTracking = t.status === "booked" || t.status === "ongoing" || t.status === "completed" || t.status === "cancelled";
                 const href = isTracking ? "/tracking" : "/planner";
                 const badgeVariant =
                   t.status === "completed" ? "success"
                   : t.status === "ongoing"  ? "accent"
+                  : t.status === "booked"   ? "success"
                   : t.status === "ready"    ? "success"
                   : t.status === "planned"  ? "secondary"
                   : "outline"; // draft / cancelled

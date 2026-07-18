@@ -1,6 +1,8 @@
 "use client";
 import { AlertTriangle, X } from "lucide-react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { useFocusTrap } from "@/hooks/use-focus-trap";
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -21,17 +23,22 @@ export function ConfirmDialog({
   variant = "danger", loading = false,
   onConfirm, onCancel,
 }: ConfirmDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(open, dialogRef, onCancel);
+
   if (!open) return null;
 
   const danger = variant === "danger";
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
       aria-describedby="confirm-dialog-description"
+      tabIndex={-1}
     >
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
         <div className="flex items-center gap-3">

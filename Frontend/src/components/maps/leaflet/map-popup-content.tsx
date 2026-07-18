@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Navigation } from "lucide-react";
 import type { District } from "@/types";
 import {
   type MapEntry,
   entryId, entryImage, entryName, entryCategory,
-  entryDescription, entryRating, entryDistrictName, entryHref,
+  entryDescription, entryRating, entryDistrictName, entryHref, entryCoordinates,
 } from "@/lib/map-entry-helpers";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Rating } from "@/components/ui/rating";
 import { KIND_STYLE } from "@/lib/category-colors";
 import { WishlistButton } from "@/components/shared/wishlist-button";
 import { cld } from "@/lib/cloudinary";
-import { cn } from "@/lib/utils";
+import { cn, directionsUrl } from "@/lib/utils";
 
 export function MapPopupContent({
   entry,
@@ -28,6 +28,7 @@ export function MapPopupContent({
 }) {
   const rating = entryRating(entry);
   const href = entryHref(entry);
+  const { lat, lng } = entryCoordinates(entry);
 
   return (
     <div className="w-[240px] overflow-hidden rounded-xl">
@@ -60,14 +61,29 @@ export function MapPopupContent({
           {entryDescription(entry)}
         </p>
 
-        {href && (
-          <Link href={href} onClick={onViewDetails}>
-            <Button size="sm" className="mt-2.5 w-full gap-1 text-xs">
-              View Details
-              <ChevronRight size={12} />
-            </Button>
-          </Link>
-        )}
+        <div className="mt-2.5 flex gap-1.5">
+          <a
+            href={directionsUrl(lat, lng)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "flex h-9 shrink-0 items-center justify-center gap-1 rounded-lg border border-border bg-white text-xs font-semibold text-foreground transition hover:bg-muted",
+              href ? "w-9" : "flex-1 px-2.5"
+            )}
+            title="Get directions"
+          >
+            <Navigation size={12} />
+            {!href && "Directions"}
+          </a>
+          {href && (
+            <Link href={href} onClick={onViewDetails} className="flex-1">
+              <Button size="sm" className="w-full gap-1 text-xs">
+                View Details
+                <ChevronRight size={12} />
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

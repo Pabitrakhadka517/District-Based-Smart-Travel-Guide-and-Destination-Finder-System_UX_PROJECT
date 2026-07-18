@@ -14,6 +14,7 @@ import { FlyToController, type FlyToTarget } from "./fly-to-controller";
 import { ProvinceLayer } from "./province-layer";
 import { HeatmapLayer, type HeatPoint } from "./heatmap-layer";
 import { WeatherLayer, type WeatherPoint } from "./weather-layer";
+import { LocateControl, type UserLocation } from "./locate-control";
 
 const NEPAL_CENTER: [number, number] = [28.3949, 84.1240];
 
@@ -27,6 +28,7 @@ export function NepalMap({
   showHeatmap,
   weatherPoints,
   showWeather,
+  onLocate,
 }: {
   entries: MapEntry[];
   districtsById: Map<string, District>;
@@ -37,6 +39,7 @@ export function NepalMap({
   showHeatmap: boolean;
   weatherPoints: WeatherPoint[];
   showWeather: boolean;
+  onLocate?: (loc: UserLocation | null) => void;
 }) {
   const markerRefs = useRef<Map<string, LeafletMarker>>(new Map());
 
@@ -95,6 +98,7 @@ export function NepalMap({
       <WeatherLayer points={weatherPoints} visible={showWeather} />
 
       <FlyToController target={flyToTarget} markerRefs={markerRefs} />
+      <LocateControl onLocate={onLocate} />
     </MapContainer>
   );
 }

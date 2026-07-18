@@ -11,7 +11,7 @@ import { DistrictForm } from "./district-form";
 
 type SortKey = "name" | "rating" | "destinations" | "attractions";
 
-export function DistrictsAdmin({ districts: initial }: { districts: District[] }) {
+export function DistrictsAdmin({ districts: initial, total }: { districts: District[]; total: number }) {
   const [rows,  setRows]  = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [search,          setSearch]          = useState("");
@@ -123,6 +123,13 @@ export function DistrictsAdmin({ districts: initial }: { districts: District[] }
               <X size={14} />
             </button>
           </div>
+        </Alert>
+      )}
+
+      {total > rows.length && (
+        <Alert variant="warning">
+          Showing the most recent {rows.length.toLocaleString()} of {total.toLocaleString()} total districts.
+          Narrow your search to find older ones.
         </Alert>
       )}
 

@@ -7,6 +7,7 @@ import { ImageUploader } from "@/components/dashboard/image-uploader";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { adminEntityService } from "@/services/adminEntityService";
+import { uploadService } from "@/services/uploadService";
 import { useDistricts } from "@/hooks/use-content";
 import { slugify } from "@/lib/utils";
 import { DEFAULT_AVATAR } from "@/lib/cloudinary";
@@ -73,10 +74,18 @@ export function GuideForm({ guide, onClose, onSaved }: GuideFormProps) {
     }
   };
 
+  const cancel = () => {
+    uploadService.discardUnsavedImages(
+      [guide?.cover, guide?.authorAvatar],
+      [cover, authorAvatar]
+    );
+    onClose();
+  };
+
   return (
     <EntityFormModal
       title={isEdit ? `Edit ${guide!.title}` : "Add guide"}
-      onClose={onClose}
+      onClose={cancel}
       onSubmit={submit}
       submitting={submitting}
       error={error}

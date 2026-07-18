@@ -7,6 +7,7 @@ import { ImageUploader } from "@/components/dashboard/image-uploader";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { adminEntityService } from "@/services/adminEntityService";
+import { uploadService } from "@/services/uploadService";
 import { slugify } from "@/lib/utils";
 
 interface DistrictFormProps {
@@ -59,10 +60,15 @@ export function DistrictForm({ district, onClose, onSaved }: DistrictFormProps) 
     }
   };
 
+  const cancel = () => {
+    uploadService.discardUnsavedImages([district?.heroImage], [heroImage]);
+    onClose();
+  };
+
   return (
     <EntityFormModal
       title={isEdit ? `Edit ${district!.name}` : "Add district"}
-      onClose={onClose}
+      onClose={cancel}
       onSubmit={submit}
       submitting={submitting}
       error={error}

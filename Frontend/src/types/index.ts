@@ -131,11 +131,13 @@ export interface TripActivity {
   id: string;
   time: string;
   title: string;
-  type: "destination" | "attraction" | "custom";
+  type: "destination" | "attraction" | "trek" | "custom";
   destinationId: string;
   location?: string;
   notes: string;
   visited?: boolean;
+  /** True for an auto-generated itinerary suggestion the user hasn't edited yet. */
+  suggested?: boolean;
 }
 
 export interface TripDay {
@@ -166,12 +168,20 @@ export interface TripPlan {
   title: string;
   travelType: TravelType;
   travelers: number;
+  /** The single district this trip's discovery/recommendations are scoped to; "" if not chosen. */
+  districtId: string;
   destinationIds: string[];
+  attractionIds: string[];
+  trekIds: string[];
   startDate: string;
   endDate: string;
   budget: number;
   budgetBreakdown: BudgetBreakdown;
-  status: "draft" | "planned" | "ready" | "ongoing" | "completed" | "cancelled";
+  accommodationPreference: AccommodationType;
+  transportPreference: TransportPreference;
+  /** id of the Booking created from this plan, "" if not yet booked */
+  bookingId: string;
+  status: "draft" | "planned" | "ready" | "booked" | "ongoing" | "completed" | "cancelled";
   notes: string;
   itinerary: TripDay[];
   checklist: ChecklistItem[];
@@ -289,15 +299,27 @@ export type TransportPreference = "Local Bus" | "Private Jeep" | "Domestic Fligh
 export interface Booking {
   id: string;
   userId?: string;
+  tripPlanId: string;
   destinationId: string;
+  destinationIds: string[];
   travelDate: string;
+  returnDate: string;
   travelers: number;
   budget: number;
   accommodationType: AccommodationType;
   transportPreference: TransportPreference;
   estimatedCost: number;
-  status: "pending" | "confirmed" | "cancelled";
+  status: "pending" | "confirmed" | "completed" | "cancelled";
   notes: string;
+  fullName: string;
+  phone: string;
+  emergencyContactName: string;
+  emergencyContactNumber: string;
+  email: string;
+  nationality: string;
+  passportNumber: string;
+  medicalInfo: string;
+  specialRequirements: string;
   createdAt: string;
 }
 

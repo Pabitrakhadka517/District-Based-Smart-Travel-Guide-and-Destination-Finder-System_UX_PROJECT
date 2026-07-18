@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { MapPin, Zap } from "lucide-react";
+import { useState, useMemo } from "react";
+import { MapPin, Zap, Mountain, PartyPopper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FOREST, SUCCESS, SECONDARY, BORDER, SECTION_BACKGROUND } from "@/lib/theme-colors";
 
@@ -9,22 +9,54 @@ export interface MapMarker {
   name: string;
   lat: number;
   lng: number;
-  type?: "destination" | "attraction";
+  type?: "destination" | "attraction" | "trek" | "festival";
 }
 
-const BOUNDS = { minLat: 26.3, maxLat: 30.5, minLng: 80.0, maxLng: 88.2 };
-const project = (lat: number, lng: number) => ({
-  x: ((lng - BOUNDS.minLng) / (BOUNDS.maxLng - BOUNDS.minLng)) * 100,
-  y: (1 - (lat - BOUNDS.minLat) / (BOUNDS.maxLat - BOUNDS.minLat)) * 100,
-});
+const NEPAL_BOUNDS = { minLat: 26.3, maxLat: 30.5, minLng: 80.0, maxLng: 88.2 };
+
+/**
+ * Fits the projection bounds to the given markers (with padding) instead of
+ * always projecting against the whole country — a tight same-district
+ * cluster (the common case for a trip summary, where every marker is a few
+ * km apart) would otherwise collapse into a handful of overlapping pixels.
+ * Falls back to the full-Nepal box when there's nothing to fit around.
+ */
+function computeBounds(markers: MapMarker[]): typeof NEPAL_BOUNDS {
+  if (markers.length === 0) return NEPAL_BOUNDS;
+
+  let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+  for (const m of markers) {
+    minLat = Math.min(minLat, m.lat);
+    maxLat = Math.max(maxLat, m.lat);
+    minLng = Math.min(minLng, m.lng);
+    maxLng = Math.max(maxLng, m.lng);
+  }
+
+  // Pad by 30% of the span on each side, with a floor of ~0.03° (a few km)
+  // so a single marker or a very tight cluster still gets visible breathing
+  // room instead of collapsing to a zero-size box.
+  const latPad = Math.max((maxLat - minLat) * 0.3, 0.03);
+  const lngPad = Math.max((maxLng - minLng) * 0.3, 0.03);
+
+  return {
+    minLat: minLat - latPad,
+    maxLat: maxLat + latPad,
+    minLng: minLng - lngPad,
+    maxLng: maxLng + lngPad,
+  };
+}
 
 const TYPE_COLORS: Record<NonNullable<MapMarker["type"]>, string> = {
   destination: "text-accent",
   attraction: "text-secondary",
+  trek: "text-success",
+  festival: "text-purple",
 };
 const TYPE_FILL: Record<NonNullable<MapMarker["type"]>, string> = {
   destination: "fill-accent",
   attraction: "fill-secondary",
+  trek: "fill-success",
+  festival: "fill-purple",
 };
 
 interface MapWidgetProps {
@@ -32,10 +64,18 @@ interface MapWidgetProps {
   height?: string;
   activeId?: string | null;
   onSelect?: (m: MapMarker) => void;
+  /** Draws a connecting line through `markers` in the order given, with a
+   *  numbered badge on each stop — used to visualize a trip's planned route. */
+  route?: boolean;
 }
 
-export function MapWidget({ markers, height = "h-[420px]", activeId, onSelect }: MapWidgetProps) {
+export function MapWidget({ markers, height = "h-[420px]", activeId, onSelect, route = false }: MapWidgetProps) {
   const [hovered, setHovered] = useState<string | null>(null);
+  const bounds = useMemo(() => computeBounds(markers), [markers]);
+  const project = (lat: number, lng: number) => ({
+    x: ((lng - bounds.minLng) / (bounds.maxLng - bounds.minLng)) * 100,
+    y: (1 - (lat - bounds.minLat) / (bounds.maxLat - bounds.minLat)) * 100,
+  });
 
   return (
     <div
@@ -84,8 +124,26 @@ export function MapWidget({ markers, height = "h-[420px]", activeId, onSelect }:
         Nepal · Interactive Map
       </span>
 
+      {/* Route line — connects markers in the given order, same 0-100
+          coordinate space (and non-uniform stretch) as marker positioning
+          below, so the line lines up with the pins exactly. */}
+      {route && markers.length > 1 && (
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 z-[5] h-full w-full" aria-hidden>
+          <polyline
+            points={markers.map((m) => { const p = project(m.lat, m.lng); return `${p.x},${p.y}`; }).join(" ")}
+            fill="none"
+            stroke={SECONDARY}
+            strokeWidth="0.6"
+            strokeDasharray="2.2 1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.75"
+          />
+        </svg>
+      )}
+
       {/* Markers */}
-      {markers.map((m) => {
+      {markers.map((m, i) => {
         const { x, y } = project(m.lat, m.lng);
         const isActive = activeId === m.id;
         const isHovered = hovered === m.id;
@@ -99,7 +157,7 @@ export function MapWidget({ markers, height = "h-[420px]", activeId, onSelect }:
             onMouseEnter={() => setHovered(m.id)}
             onMouseLeave={() => setHovered(null)}
             className="group absolute z-10 -translate-x-1/2 -translate-y-full focus:outline-none"
-            aria-label={m.name}
+            aria-label={route ? `Stop ${i + 1}: ${m.name}` : m.name}
           >
             {/* Ring for active */}
             {isActive && (
@@ -107,6 +165,12 @@ export function MapWidget({ markers, height = "h-[420px]", activeId, onSelect }:
                 "absolute inset-0 -translate-x-[5px] -translate-y-[2px] h-9 w-9 rounded-full ring-2 ring-offset-1",
                 type === "destination" ? "ring-accent" : "ring-secondary"
               )} />
+            )}
+
+            {route && (
+              <span className="absolute -left-1 -top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[9px] font-bold text-white shadow ring-2 ring-white">
+                {i + 1}
+              </span>
             )}
 
             <MapPin
@@ -140,16 +204,32 @@ export function MapWidget({ markers, height = "h-[420px]", activeId, onSelect }:
         </div>
       )}
 
-      {/* Legend */}
+      {/* Legend — only shows the kinds actually present on this map */}
       <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-1.5 rounded-xl bg-white/88 p-3 text-xs shadow backdrop-blur">
-        <span className="flex items-center gap-1.5">
-          <MapPin size={13} className="fill-accent text-accent" />
-          Destination
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Zap size={13} className="fill-secondary text-secondary" />
-          Attraction
-        </span>
+        {markers.some((m) => (m.type ?? "destination") === "destination") && (
+          <span className="flex items-center gap-1.5">
+            <MapPin size={13} className="fill-accent text-accent" />
+            Destination
+          </span>
+        )}
+        {markers.some((m) => m.type === "attraction") && (
+          <span className="flex items-center gap-1.5">
+            <Zap size={13} className="fill-secondary text-secondary" />
+            Attraction
+          </span>
+        )}
+        {markers.some((m) => m.type === "trek") && (
+          <span className="flex items-center gap-1.5">
+            <Mountain size={13} className="fill-success text-success" />
+            Trek
+          </span>
+        )}
+        {markers.some((m) => m.type === "festival") && (
+          <span className="flex items-center gap-1.5">
+            <PartyPopper size={13} className="fill-purple text-purple" />
+            Festival
+          </span>
+        )}
       </div>
     </div>
   );

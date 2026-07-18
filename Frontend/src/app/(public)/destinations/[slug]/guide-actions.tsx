@@ -1,9 +1,12 @@
 "use client";
 import { useState } from "react";
-import { Heart, Share2, CalendarPlus, CheckCircle } from "lucide-react";
+import { Heart, Share2, CalendarCheck, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useWishlist } from "@/store/wishlist-store";
 import { useToggleWishlist } from "@/hooks/use-toggle-wishlist";
+import { usePlans } from "@/hooks/use-content";
+import { isBookablePlan } from "@/app/(user)/planner/planner-utils";
+import { AddToTripButton } from "@/components/shared/add-to-trip-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +22,13 @@ export function GuideActions({ id, dark = false }: Props) {
   const toggleWishlist = useToggleWishlist();
   const [copied,  setCopied]    = useState(false);
   const saved = hasHydrated && savedInStore;
+
+  // A plan that's Ready and includes this destination can be booked directly
+  // from here — bookings only ever come from a trip plan, never straight off
+  // a destination page, so this is the entry point into that flow.
+  const { data: plans = [] } = usePlans();
+  const bookablePlans = plans.filter((p) => isBookablePlan(p) && p.destinationIds.includes(id));
+  const bookHref = bookablePlans.length === 1 ? `/booking?planId=${bookablePlans[0].id}` : "/booking";
 
   const share = () => {
     if (typeof navigator === "undefined") return;
@@ -65,13 +75,19 @@ export function GuideActions({ id, dark = false }: Props) {
           {copied ? "Copied!" : "Share"}
         </button>
 
-        <Link
-          href="/planner"
-          className="flex items-center gap-2 rounded-2xl bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-105"
-        >
-          <CalendarPlus size={15} />
-          Plan a trip
-        </Link>
+        <div className="w-40">
+          <AddToTripButton destinationId={id} dark fullWidth />
+        </div>
+
+        {bookablePlans.length > 0 && (
+          <Link
+            href={bookHref}
+            className="flex items-center gap-2 rounded-2xl bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-105"
+          >
+            <CalendarCheck size={15} />
+            Book This Planned Trip
+          </Link>
+        )}
       </div>
     );
   }
@@ -93,11 +109,17 @@ export function GuideActions({ id, dark = false }: Props) {
         {copied ? "Copied!" : "Share"}
       </Button>
 
-      <Link href="/planner">
-        <Button variant="accent">
-          <CalendarPlus size={16} /> Plan a trip
-        </Button>
-      </Link>
+      <div className="w-44">
+        <AddToTripButton destinationId={id} fullWidth />
+      </div>
+
+      {bookablePlans.length > 0 && (
+        <Link href={bookHref}>
+          <Button variant="accent">
+            <CalendarCheck size={16} /> Book This Planned Trip
+          </Button>
+        </Link>
+      )}
     </div>
   );
 }

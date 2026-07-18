@@ -98,7 +98,7 @@ function clearAllRecent() {
 function FestivalResultCard({ f }: { f: Festival }) {
   return (
     <Link
-      href="/festivals"
+      href={`/festivals/${f.slug}`}
       className="flex items-center gap-4 rounded-2xl border border-border bg-white p-4 shadow-soft transition-colors hover:border-secondary/40"
     >
       <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-xl">

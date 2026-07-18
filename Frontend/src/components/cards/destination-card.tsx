@@ -3,7 +3,13 @@ import { EntityImageCard } from "@/components/cards/entity-image-card";
 import { formatCurrency } from "@/lib/utils";
 import { categorySolidBadge } from "@/lib/category-colors";
 
-export function DestinationCard({ destination: d }: { destination: Destination }) {
+interface DestinationCardProps {
+  destination: Destination;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+}
+
+export function DestinationCard({ destination: d, selected, onToggleSelect }: DestinationCardProps) {
   return (
     <EntityImageCard
       href={`/destinations/${d.slug}`}
@@ -16,6 +22,8 @@ export function DestinationCard({ destination: d }: { destination: Destination }
       categoryLabel={d.category}
       categoryBadgeClassName={categorySolidBadge(d.category)}
       trending={d.trending}
+      selected={selected}
+      onToggleSelect={onToggleSelect}
       footer={
         <>
           <div className="flex flex-wrap gap-1">

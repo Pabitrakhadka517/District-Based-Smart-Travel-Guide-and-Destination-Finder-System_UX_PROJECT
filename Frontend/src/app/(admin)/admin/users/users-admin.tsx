@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
-import { Trash2, ShieldCheck, ShieldOff, X } from "lucide-react";
+import { Trash2, ShieldCheck, ShieldOff, X, UserCheck, UserX } from "lucide-react";
 import { AdminTable, type Column } from "@/components/dashboard/admin-table";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { CloudinaryImage } from "@/components/shared/cloudinary-image";
 import { cn } from "@/lib/utils";
-import { apiGet, apiPatch, apiDelete } from "@/services/api-client";
+import { isDefaultAvatar } from "@/lib/cloudinary";
+import { apiGetPaginated, apiPatch, apiDelete } from "@/services/api-client";
 import type { CloudinaryImage as CloudinaryImageType } from "@/types";
 
 interface UserRow {
@@ -16,6 +17,7 @@ interface UserRow {
   role: "user" | "admin";
   joinedAt: string;
   avatar?: CloudinaryImageType;
+  isActive?: boolean;
 }
 
 type RoleFilter = "all" | "user" | "admin";
@@ -23,6 +25,7 @@ type SortKey    = "newest" | "oldest" | "az";
 
 export function UsersAdmin() {
   const [users,   setUsers]   = useState<UserRow[]>([]);
+  const [total,   setTotal]   = useState(0);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
   const [search,      setSearch]      = useState("");
@@ -30,8 +33,8 @@ export function UsersAdmin() {
   const [sortBy,      setSortBy]      = useState<SortKey>("newest");
 
   useEffect(() => {
-    apiGet<UserRow[]>("/users", true)
-      .then(setUsers)
+    apiGetPaginated<UserRow>("/users?limit=500", true)
+      .then(({ data, total }) => { setUsers(data); setTotal(total); })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load users"))
       .finally(() => setLoading(false));
   }, []);
@@ -43,6 +46,16 @@ export function UsersAdmin() {
       setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, role: newRole } : x));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to update role");
+    }
+  };
+
+  const toggleStatus = async (u: UserRow) => {
+    const newActive = u.isActive === false;
+    try {
+      await apiPatch(`/users/${u.id}/status`, { isActive: newActive });
+      setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, isActive: newActive } : x));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to update account status");
     }
   };
 
@@ -113,7 +126,7 @@ export function UsersAdmin() {
       key: "name", label: "User",
       render: (u) => (
         <div className="flex items-center gap-3">
-          {u.avatar
+          {u.avatar?.url && !isDefaultAvatar(u.avatar)
             ? <CloudinaryImage image={u.avatar} alt="" width={32} height={32} className="shrink-0 rounded-full" />
             : (
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand-600">
@@ -140,6 +153,21 @@ export function UsersAdmin() {
           <Badge variant={u.role === "admin" ? "accent" : "secondary"} className="cursor-pointer capitalize">
             {u.role === "admin" ? <ShieldCheck size={10} className="mr-1" /> : <ShieldOff size={10} className="mr-1" />}
             {u.role}
+          </Badge>
+        </button>
+      ),
+    },
+    {
+      key: "isActive", label: "Status",
+      render: (u) => (
+        <button
+          onClick={() => toggleStatus(u)}
+          title={u.isActive === false ? "Click to reactivate this account" : "Click to deactivate this account"}
+          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+        >
+          <Badge variant={u.isActive === false ? "outline" : "success"} className="cursor-pointer">
+            {u.isActive === false ? <UserX size={10} className="mr-1" /> : <UserCheck size={10} className="mr-1" />}
+            {u.isActive === false ? "Deactivated" : "Active"}
           </Badge>
         </button>
       ),
@@ -196,6 +224,13 @@ export function UsersAdmin() {
               <X size={14} />
             </button>
           </div>
+        </Alert>
+      )}
+
+      {total > users.length && (
+        <Alert variant="warning">
+          Showing the most recent {users.length.toLocaleString()} of {total.toLocaleString()} total users.
+          Narrow your search to find older ones.
         </Alert>
       )}
 

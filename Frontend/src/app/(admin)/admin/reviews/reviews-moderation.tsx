@@ -8,7 +8,7 @@ import { Alert } from "@/components/ui/alert";
 import { Rating } from "@/components/ui/rating";
 import { CloudinaryImage } from "@/components/shared/cloudinary-image";
 import { cn } from "@/lib/utils";
-import { apiGet, apiPatch, apiDelete } from "@/services/api-client";
+import { apiGetPaginated, apiPatch, apiDelete } from "@/services/api-client";
 
 type StatusFilter = "all" | Review["status"];
 type RatingFilter = "all" | "5" | "4" | "3" | "2" | "1";
@@ -20,6 +20,7 @@ function formatDate(iso: string) {
 
 export function ReviewsModeration() {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [total,   setTotal]   = useState(0);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
 
@@ -31,8 +32,11 @@ export function ReviewsModeration() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
-    apiGet<Review[]>("/reviews", true)
-      .then(setReviews)
+    // No server-side pager UI here (filtering is client-side by status tab),
+    // so request a high ceiling in one shot and keep `total` around so a
+    // genuine overflow past 500 is surfaced, not silently truncated.
+    apiGetPaginated<Review>("/reviews?limit=500", true)
+      .then(({ data, total }) => { setReviews(data); setTotal(total); })
       .catch(() => setError("Failed to load reviews. Please refresh."))
       .finally(() => setLoading(false));
   }, []);
@@ -155,6 +159,13 @@ export function ReviewsModeration() {
               <X size={14} />
             </button>
           </div>
+        </Alert>
+      )}
+
+      {total > reviews.length && (
+        <Alert variant="warning">
+          Showing the most recent {reviews.length.toLocaleString()} of {total.toLocaleString()} total reviews.
+          Narrow your search or status filter to find older ones.
         </Alert>
       )}
 

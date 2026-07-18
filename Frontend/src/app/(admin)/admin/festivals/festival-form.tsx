@@ -7,6 +7,7 @@ import { ImageUploader } from "@/components/dashboard/image-uploader";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { adminEntityService } from "@/services/adminEntityService";
+import { uploadService } from "@/services/uploadService";
 import { useDistricts } from "@/hooks/use-content";
 import { slugify } from "@/lib/utils";
 
@@ -68,10 +69,15 @@ export function FestivalForm({ festival, onClose, onSaved }: FestivalFormProps) 
     }
   };
 
+  const cancel = () => {
+    uploadService.discardUnsavedImages([festival?.image], [image]);
+    onClose();
+  };
+
   return (
     <EntityFormModal
       title={isEdit ? `Edit ${festival!.name}` : "Add festival"}
-      onClose={onClose}
+      onClose={cancel}
       onSubmit={submit}
       submitting={submitting}
       error={error}

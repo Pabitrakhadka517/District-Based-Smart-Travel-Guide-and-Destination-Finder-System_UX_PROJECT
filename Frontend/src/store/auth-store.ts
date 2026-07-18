@@ -19,11 +19,10 @@ function clearCookie(name: string) {
 }
 
 interface AuthState {
-  token: string | null;
   user: User | null;
   hasHydrated: boolean;
   setHasHydrated: (v: boolean) => void;
-  setAuth: (token: string, user: User, rememberMe?: boolean) => void;
+  setAuth: (user: User, rememberMe?: boolean) => void;
   updateUser: (user: User) => void;
   clearAuth: () => void;
   isAdmin: () => boolean;
@@ -33,17 +32,16 @@ interface AuthState {
 export const useAuth = create<AuthState>()(
   persist(
     (set, get) => ({
-      token: null,
       user: null,
       hasHydrated: false,
       setHasHydrated: (v) => set({ hasHydrated: v }),
 
-      setAuth: (token, user, rememberMe = false) => {
+      setAuth: (user, rememberMe = false) => {
         // Session cookies let the Next.js middleware know the user is logged in
         const days = rememberMe ? 30 : 7;
         setCookie(SESSION_COOKIE, "1", days);
         setCookie(ROLE_COOKIE, user.role, days);
-        set({ token, user });
+        set({ user });
       },
 
       updateUser: (user) => {
@@ -53,22 +51,19 @@ export const useAuth = create<AuthState>()(
       clearAuth: () => {
         clearCookie(SESSION_COOKIE);
         clearCookie(ROLE_COOKIE);
-        set({ token: null, user: null });
+        set({ user: null });
         // Prevents the next person on a shared/public browser from seeing (or
         // accidentally re-saving into their own account) the previous user's wishlist.
         useWishlist.getState().clear();
       },
 
       isAdmin: () => get().user?.role === "admin",
-      // Login state is judged by `user`, not `token`: the access token now lives
-      // only in an httpOnly cookie (never in JS-readable storage, so an XSS bug
-      // can't exfiltrate it) and isn't persisted here at all — see partialize below.
+      // The access token lives only in an httpOnly cookie (never in JS-readable
+      // storage, so an XSS bug can't exfiltrate it) — it's never held here at all.
       isLoggedIn: () => !!get().user
     }),
     {
       name: "nepayatra-auth",
-      // Deliberately excludes `token` — it's kept in memory for this tab's
-      // lifetime (see setAuth/clearAuth) but never written to localStorage.
       partialize: (s) => ({ user: s.user }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

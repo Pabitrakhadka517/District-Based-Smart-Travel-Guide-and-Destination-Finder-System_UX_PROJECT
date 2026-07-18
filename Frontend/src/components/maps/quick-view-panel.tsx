@@ -5,16 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft, Clock, Star, ChevronRight, Plus, Check,
-  Footprints, Mountain, CalendarDays, BookOpen,
+  Footprints, Mountain, CalendarDays, BookOpen, Navigation,
 } from "lucide-react";
 import type { TripPlan, District } from "@/types";
 import {
-  type MapEntry, entryImage, entryName, entryHref, entryDistrictName,
+  type MapEntry, entryImage, entryName, entryHref, entryDistrictName, entryCoordinates,
 } from "@/lib/map-entry-helpers";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Rating } from "@/components/ui/rating";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, directionsUrl } from "@/lib/utils";
 import { WishlistButton } from "@/components/shared/wishlist-button";
 import { cld } from "@/lib/cloudinary";
 import { usePlans, useUpdatePlan } from "@/hooks/use-content";
@@ -102,6 +102,7 @@ export function QuickViewPanel({ entry, districtsById, onBack }: { entry: MapEnt
   const [showAddTrip, setShowAddTrip] = useState(false);
   const href = entryHref(entry);
   const district = entryDistrictName(entry, districtsById);
+  const { lat, lng } = entryCoordinates(entry);
 
   return (
     <div className="flex flex-col h-full">
@@ -218,6 +219,13 @@ export function QuickViewPanel({ entry, districtsById, onBack }: { entry: MapEnt
         </div>
 
         <div className="mt-4 flex flex-col gap-2">
+          <a href={directionsUrl(lat, lng)} target="_blank" rel="noopener noreferrer">
+            <Button size="sm" variant="outline" className="w-full gap-1.5">
+              <Navigation size={13} />
+              Get Directions
+            </Button>
+          </a>
+
           {entry.kind === "destination" && (
             <div className="relative">
               <Button size="sm" variant="outline" className="w-full gap-1.5" onClick={() => setShowAddTrip((v) => !v)}>

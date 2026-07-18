@@ -7,6 +7,7 @@ import { ImageUploader, GalleryUploader } from "@/components/dashboard/image-upl
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { adminEntityService } from "@/services/adminEntityService";
+import { uploadService } from "@/services/uploadService";
 import { useDistricts } from "@/hooks/use-content";
 import { slugify } from "@/lib/utils";
 
@@ -77,10 +78,18 @@ export function AttractionForm({ attraction, onClose, onSaved }: AttractionFormP
     }
   };
 
+  const cancel = () => {
+    uploadService.discardUnsavedImages(
+      [attraction?.heroImage, attraction?.gallery],
+      [heroImage, gallery]
+    );
+    onClose();
+  };
+
   return (
     <EntityFormModal
       title={isEdit ? `Edit ${attraction!.name}` : "Add attraction"}
-      onClose={onClose}
+      onClose={cancel}
       onSubmit={submit}
       submitting={submitting}
       error={error}

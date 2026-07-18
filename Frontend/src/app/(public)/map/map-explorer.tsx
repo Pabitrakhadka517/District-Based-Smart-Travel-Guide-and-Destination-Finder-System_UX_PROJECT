@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { Search, X } from "lucide-react";
+import { Search, X, LocateFixed } from "lucide-react";
 import type { Destination, TouristAttraction, Trek, Festival, GuideArticle } from "@/types";
 import { useDestinations, useAttractions, useTreks, useFestivals, useGuides, useDistricts } from "@/hooks/use-content";
 import {
@@ -14,9 +14,11 @@ import { QuickViewPanel } from "@/components/maps/quick-view-panel";
 import { SidebarSections } from "@/components/maps/sidebar-sections";
 import { ItemRow } from "@/components/maps/item-row";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn, distanceKm } from "@/lib/utils";
 import type { FlyToTarget } from "@/components/maps/leaflet/fly-to-controller";
 import type { HeatPoint } from "@/components/maps/leaflet/heatmap-layer";
 import type { WeatherPoint } from "@/components/maps/leaflet/weather-layer";
+import type { UserLocation } from "@/components/maps/leaflet/locate-control";
 
 const NepalMap = dynamic(
   () => import("@/components/maps/leaflet/nepal-map").then((m) => m.NepalMap),
@@ -50,6 +52,8 @@ export function MapExplorer(props: Props) {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showWeather, setShowWeather] = useState(false);
   const [search, setSearch] = useState("");
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [sortByDistance, setSortByDistance] = useState(false);
 
   const allEntries = useMemo<MapEntry[]>(() => [
     ...destinations.map((d): MapEntry => ({ kind: "destination", data: d })),
@@ -76,10 +80,21 @@ export function MapExplorer(props: Props) {
       const q = search.toLowerCase();
       list = list.filter((e) => entryName(e).toLowerCase().includes(q));
     }
+    if (sortByDistance && userLocation) {
+      list = [...list].sort(
+        (a, b) => distanceKm(userLocation, entryCoordinates(a)) - distanceKm(userLocation, entryCoordinates(b))
+      );
+    }
     return list;
-  }, [visibleEntries, sidebarView, search]);
+  }, [visibleEntries, sidebarView, search, sortByDistance, userLocation]);
 
-  const showCuratedSections = !sidebarView && !search.trim();
+  const showCuratedSections = !sidebarView && !search.trim() && !sortByDistance;
+
+  function handleLocate(loc: UserLocation | null) {
+    setUserLocation(loc);
+    if (loc) setSortByDistance(true);
+    else setSortByDistance(false);
+  }
 
   function toggleKind(kind: MapKind) {
     setVisibleKinds((prev) => {
@@ -186,6 +201,7 @@ export function MapExplorer(props: Props) {
               showHeatmap={showHeatmap}
               weatherPoints={weatherPoints}
               showWeather={showWeather}
+              onLocate={handleLocate}
             />
             <FilterPanel
               visibleKinds={visibleKinds}
@@ -223,6 +239,19 @@ export function MapExplorer(props: Props) {
                     </button>
                   )}
                 </div>
+
+                {userLocation && (
+                  <button
+                    onClick={() => setSortByDistance((v) => !v)}
+                    className={cn(
+                      "mb-3 flex w-full items-center gap-1.5 rounded-xl border px-3 py-2 text-left text-xs font-medium transition",
+                      sortByDistance ? "border-transparent bg-secondary/10 text-secondary" : "border-border bg-white text-muted-foreground"
+                    )}
+                  >
+                    <LocateFixed size={13} className="shrink-0" />
+                    {sortByDistance ? "Sorted by distance from you — tap to turn off" : "Tap to sort by distance from you"}
+                  </button>
+                )}
 
                 {showCuratedSections ? (
                   <div className="lg:max-h-full lg:overflow-y-auto pr-0.5">
@@ -263,6 +292,7 @@ export function MapExplorer(props: Props) {
                             entry={entry}
                             isSelected={entriesMatch(selected, entry)}
                             onClick={() => setSelected(entry)}
+                            distanceKm={userLocation ? distanceKm(userLocation, entryCoordinates(entry)) : undefined}
                           />
                         ))
                       )}

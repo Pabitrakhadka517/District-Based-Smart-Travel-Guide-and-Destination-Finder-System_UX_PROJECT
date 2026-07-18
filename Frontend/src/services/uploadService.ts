@@ -101,5 +101,30 @@ export const uploadService = {
   deleteImage: (publicId: string | null | undefined): Promise<void> => {
     if (!publicId) return Promise.resolve();
     return apiDelete<void>(`/upload/image?publicId=${encodeURIComponent(publicId)}`).catch(() => undefined);
+  },
+
+  /** Deletes any image in `after` that wasn't already part of `before`. Used
+   *  when an admin form is cancelled: ImageUploader/GalleryUploader upload to
+   *  Cloudinary immediately on selection (so previews work without an extra
+   *  save round-trip), but if the form is dismissed instead of saved, those
+   *  freshly-uploaded replacements would otherwise never get cleaned up. */
+  discardUnsavedImages: (
+    before: Array<CloudinaryImage | CloudinaryImage[] | null | undefined>,
+    after: Array<CloudinaryImage | CloudinaryImage[] | null | undefined>
+  ): void => {
+    const flatten = (list: typeof before) => {
+      const ids = new Set<string>();
+      for (const item of list) {
+        if (!item) continue;
+        for (const img of Array.isArray(item) ? item : [item]) {
+          if (img?.publicId) ids.add(img.publicId);
+        }
+      }
+      return ids;
+    };
+    const beforeIds = flatten(before);
+    for (const id of flatten(after)) {
+      if (!beforeIds.has(id)) void uploadService.deleteImage(id);
+    }
   }
 };
