@@ -11,7 +11,7 @@ import { genId, today } from "../utils/ids";
 import { sendPasswordResetEmail } from "../services/email.service";
 import { env } from "../config/env";
 import { sanitizeImage } from "../utils/sanitize";
-import { deleteImage } from "../services/cloudinary.service";
+import { deleteImage, PLACEHOLDER } from "../services/cloudinary.service";
 
 const REFRESH_COOKIE    = "nepalyatra_rt";
 const BCRYPT_ROUNDS     = 12;
@@ -139,7 +139,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
   setRefreshCookie(res, rtPlain, false);
   setAccessCookie(res, accessToken);
-  ok(res, { token: accessToken, user: user.toJSON() }, 201);
+  ok(res, { user: user.toJSON() }, 201);
 });
 
 // POST /api/auth/login   { email, password, rememberMe? }
@@ -209,7 +209,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   setRefreshCookie(res, rtPlain, remember);
   setAccessCookie(res, accessToken);
   await audit(user.id, "login", req, { rememberMe: remember });
-  ok(res, { token: accessToken, user: user.toJSON() });
+  ok(res, { user: user.toJSON() });
 });
 
 // POST /api/auth/refresh   (refresh token in cookie)
@@ -273,7 +273,7 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
   const accessToken = signToken({ sub: user.id, role: user.role as "user" | "admin" });
   setRefreshCookie(res, newPlain, remember);
   setAccessCookie(res, accessToken);
-  ok(res, { token: accessToken, user: user.toJSON() });
+  ok(res, { user: user.toJSON() });
 });
 
 // POST /api/auth/logout
@@ -340,8 +340,14 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
   const user = await User.findOneAndUpdate({ id: req.auth!.sub }, updates, { new: true });
   if (!user) return fail(res, "User not found", 404);
 
-  // Best-effort cleanup of the old Cloudinary asset — never fails the request
-  if (previousAvatarPublicId && previousAvatarPublicId !== (updates.avatar as { publicId: string | null })?.publicId) {
+  // Best-effort cleanup of the old Cloudinary asset — never fails the request.
+  // Never delete the shared default-avatar placeholder — only a genuinely
+  // custom upload belongs to this user alone.
+  if (
+    previousAvatarPublicId &&
+    previousAvatarPublicId !== PLACEHOLDER.avatar.publicId &&
+    previousAvatarPublicId !== (updates.avatar as { publicId: string | null })?.publicId
+  ) {
     void deleteImage(previousAvatarPublicId);
   }
 
