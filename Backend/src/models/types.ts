@@ -141,6 +141,12 @@ export interface IContactMessage {
   createdAt: Date;
 }
 
+export interface INewsletterSubscriber {
+  id: string;
+  email: string;
+  createdAt: Date;
+}
+
 export interface IAuditLog {
   id: string;
   userId: string;
@@ -153,9 +159,11 @@ export interface IAuditLog {
 
 export interface ITripActivity {
   id: string; time: string; title: string;
-  type: "destination" | "attraction" | "custom";
+  type: "destination" | "attraction" | "trek" | "custom";
   destinationId: string; notes: string;
   location: string; visited: boolean;
+  /** True for an auto-generated itinerary suggestion the user hasn't edited yet. */
+  suggested: boolean;
 }
 
 export interface ITripDay {
@@ -177,10 +185,18 @@ export type TravelType = "Adventure" | "Trekking" | "Cultural" | "Religious" | "
 export interface ITripPlan {
   id: string; userId: string; title: string;
   travelType: TravelType; travelers: number;
+  /** The single district this trip is scoped to for discovery/recommendations — "" if not yet chosen (e.g. a legacy or quick-created plan). */
+  districtId: string;
   destinationIds: string[];
+  attractionIds: string[];
+  trekIds: string[];
   startDate: string; endDate: string;
   budget: number; budgetBreakdown: IBudgetBreakdown;
-  status: "draft" | "planned" | "ready" | "ongoing" | "completed" | "cancelled";
+  accommodationPreference: AccommodationType;
+  transportPreference: TransportPreference;
+  /** id of the Booking created from this plan, "" if not yet booked */
+  bookingId: string;
+  status: "draft" | "planned" | "ready" | "booked" | "ongoing" | "completed" | "cancelled";
   notes: string;
   itinerary: ITripDay[];
   checklist: IChecklistItem[];
@@ -193,15 +209,28 @@ export type TransportPreference = "Local Bus" | "Private Jeep" | "Domestic Fligh
 export interface IBooking {
   id: string;
   userId: string;
+  /** the TripPlan this booking was created from — a booking always has one */
+  tripPlanId: string;
   destinationId: string;
+  destinationIds: string[];
   travelDate: string; // YYYY-MM-DD
+  returnDate: string;
   travelers: number;
   budget: number;
   accommodationType: AccommodationType;
   transportPreference: TransportPreference;
   estimatedCost: number;
-  status: "pending" | "confirmed" | "cancelled";
+  status: "pending" | "confirmed" | "completed" | "cancelled";
   notes: string;
+  fullName: string;
+  phone: string;
+  emergencyContactName: string;
+  emergencyContactNumber: string;
+  email: string;
+  nationality: string;
+  passportNumber: string;
+  medicalInfo: string;
+  specialRequirements: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -640,7 +640,7 @@ export const openapiSpec = {
           id:            { type: "string", example: "act1" },
           time:          { type: "string", example: "09:00" },
           title:         { type: "string", example: "Sunrise at Sarangkot" },
-          type:          { type: "string", enum: ["destination", "attraction", "custom"], example: "destination" },
+          type:          { type: "string", enum: ["destination", "attraction", "trek", "custom"], example: "destination" },
           destinationId: { type: "string", example: "p1" },
           notes:         { type: "string" }
         }
@@ -675,7 +675,10 @@ export const openapiSpec = {
           title:           { type: "string", example: "Kathmandu Heritage Weekend" },
           travelType:      { type: "string", enum: ENUM_TRAVEL_TYPE, example: "Cultural" },
           travelers:       { type: "integer", minimum: 1, example: 2 },
+          districtId:      { type: "string", example: "d1", description: "The district this trip's discovery/recommendations are scoped to; \"\" if not chosen (e.g. a quick-created plan)" },
           destinationIds:  { type: "array", items: { type: "string" }, example: ["p1", "p2"] },
+          attractionIds:   { type: "array", items: { type: "string" }, example: ["a1", "a2"] },
+          trekIds:         { type: "array", items: { type: "string" }, example: ["tk1"] },
           startDate:       { type: "string", format: "date", example: "2026-08-01" },
           endDate:         { type: "string", format: "date", example: "2026-08-03" },
           budget:          { type: "number", example: 450, description: "Total budget in USD" },
@@ -709,14 +712,9 @@ export const openapiSpec = {
 
       AuthTokens: {
         type: "object",
-        description: "Tokens returned after successful login or registration",
-        required: ["token", "user"],
+        description: "Returned after successful login, registration or refresh. The access token itself is never included in the body — it's set as an httpOnly `nepalyatra_at` cookie so client-side JS (and any XSS payload) can't read it.",
+        required: ["user"],
         properties: {
-          token: {
-            type: "string",
-            description: "Short-lived JWT access token (default 15 min). Use as `Authorization: Bearer <token>`.",
-            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…"
-          },
           user: $ref("User")
         }
       },
@@ -2101,7 +2099,10 @@ export const openapiSpec = {
                   title:           { type: "string", example: "Kathmandu Heritage Weekend" },
                   travelType:      { type: "string", enum: ENUM_TRAVEL_TYPE, default: "Adventure" },
                   travelers:       { type: "integer", minimum: 1, default: 1 },
+                  districtId:      { type: "string", example: "d1" },
                   destinationIds:  { type: "array", items: { type: "string" }, example: ["p1", "p2", "p4"] },
+                  attractionIds:   { type: "array", items: { type: "string" }, example: ["a1"] },
+                  trekIds:         { type: "array", items: { type: "string" }, example: ["tk1"] },
                   startDate:       { type: "string", format: "date", example: "2026-08-01" },
                   endDate:         { type: "string", format: "date", example: "2026-08-03" },
                   budget:          { type: "number", example: 450, description: "Total budget in USD" },

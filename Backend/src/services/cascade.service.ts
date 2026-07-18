@@ -9,6 +9,7 @@ import { Guide } from "../models/Guide";
 import { Trek } from "../models/Trek";
 import { Destination } from "../models/Destination";
 import { cleanupReplacedImages } from "./cloudinary.service";
+import { recomputeDestinationRating } from "./rating.service";
 
 /**
  * No model in this codebase uses Mongoose ObjectId `ref`s (every relation is a
@@ -22,13 +23,33 @@ import { cleanupReplacedImages } from "./cloudinary.service";
  *  destination document itself — callers do that (they may need its images
  *  first for Cloudinary cleanup). */
 export async function cascadeDestinationReferences(destinationId: string): Promise<void> {
+  // Bookings whose *primary* destination is being deleted are removed outright
+  // below (there's no remaining destination left to book) — but any TripPlan
+  // marked "booked" against one of them must be reverted too, or it's left
+  // pointing at a bookingId that no longer resolves to anything (it would
+  // then silently vanish from Travel Tracking with no cancellation record).
+  const orphanedBookings = await Booking.find({ destinationId }).select("id tripPlanId").lean();
+
   await Promise.all([
     Review.deleteMany({ destinationId }),
     Booking.deleteMany({ destinationId }),
+    // A multi-destination booking's primary `destinationId` may point elsewhere,
+    // so it survives the deleteMany above — still strip the deleted id out of
+    // its `destinationIds` snapshot so it doesn't dangle.
+    Booking.updateMany(
+      { destinationIds: destinationId },
+      { $pull: { destinationIds: destinationId } }
+    ),
     User.updateMany({ wishlist: destinationId }, { $pull: { wishlist: destinationId } }),
     TripPlan.updateMany(
       { destinationIds: destinationId },
       { $pull: { destinationIds: destinationId } }
+    ),
+    ...orphanedBookings.map((b) =>
+      TripPlan.updateOne(
+        { id: b.tripPlanId, bookingId: b.id, status: "booked" },
+        { $set: { status: "ready", bookingId: "" } }
+      )
     )
   ]);
 }
@@ -49,9 +70,27 @@ export async function cascadeCityReferences(cityId: string): Promise<void> {
  *  (`nearbyAttractions`), so deleting one leaves dangling ids in whichever
  *  other attractions listed it as nearby. */
 export async function cascadeAttractionReferences(attractionId: string): Promise<void> {
-  await Attraction.updateMany(
-    { nearbyAttractions: attractionId },
-    { $pull: { nearbyAttractions: attractionId } }
+  await Promise.all([
+    Attraction.updateMany(
+      { nearbyAttractions: attractionId },
+      { $pull: { nearbyAttractions: attractionId } }
+    ),
+    // Wishlist ids can point at either a Destination or an Attraction (see
+    // wishlist.controller.ts) — mirror cascadeDestinationReferences so a
+    // deleted attraction doesn't linger in anyone's wishlist.
+    User.updateMany({ wishlist: attractionId }, { $pull: { wishlist: attractionId } }),
+    TripPlan.updateMany(
+      { attractionIds: attractionId },
+      { $pull: { attractionIds: attractionId } }
+    )
+  ]);
+}
+
+/** A deleted Trek would otherwise dangle in any TripPlan's `trekIds` snapshot. */
+export async function cascadeTrekReferences(trekId: string): Promise<void> {
+  await TripPlan.updateMany(
+    { trekIds: trekId },
+    { $pull: { trekIds: trekId } }
   );
 }
 
@@ -76,7 +115,8 @@ export async function cascadeDistrictReferences(districtId: string): Promise<voi
   for (const g of guides) cleanupReplacedImages([g.cover, g.authorAvatar], []);
 
   // Attractions outside this district may still list one of these (now-deleted)
-  // attractions as "nearby" — detach those dangling ids too.
+  // attractions as "nearby" — detach those dangling ids too. Same idea for any
+  // TripPlan that had one of these attractions in its snapshot.
   const attractionIds = attractions.map((a) => a.id);
   await Promise.all([
     Destination.deleteMany({ districtId }),
@@ -87,8 +127,42 @@ export async function cascadeDistrictReferences(districtId: string): Promise<voi
     attractionIds.length
       ? Attraction.updateMany({ nearbyAttractions: { $in: attractionIds } }, { $pull: { nearbyAttractions: { $in: attractionIds } } })
       : Promise.resolve(),
+    attractionIds.length
+      ? TripPlan.updateMany({ attractionIds: { $in: attractionIds } }, { $pull: { attractionIds: { $in: attractionIds } } })
+      : Promise.resolve(),
     // Treks can span multiple districts — detach this one rather than
     // deleting the whole trek.
     Trek.updateMany({ districtIds: districtId }, { $pull: { districtIds: districtId } })
   ]);
+}
+
+/**
+ * Removes everything a deleted user owned that would otherwise dangle: their
+ * trip plans, bookings, and reviews (with each affected destination's rating
+ * recomputed so it doesn't silently keep counting a review that no longer
+ * exists), plus the Cloudinary images those trips/reviews owned. Wishlist and
+ * refresh tokens live on the User document itself, so they're removed for
+ * free by the delete that follows this call. Audit log entries are
+ * deliberately left alone — they're a historical record of what happened,
+ * not a live reference, and already self-expire after 90 days (see
+ * AuditLog.ts) — deleting them here would erase the very trail an admin
+ * might want to review after removing an abusive account.
+ */
+export async function cascadeUserReferences(userId: string): Promise<void> {
+  const [trips, reviews] = await Promise.all([
+    TripPlan.find({ userId }).select("photos"),
+    Review.find({ userId }).select("destinationId photos")
+  ]);
+
+  await Promise.all([
+    TripPlan.deleteMany({ userId }),
+    Booking.deleteMany({ userId }),
+    Review.deleteMany({ userId })
+  ]);
+
+  for (const t of trips) cleanupReplacedImages([t.photos], []);
+  for (const r of reviews) cleanupReplacedImages([r.photos], []);
+
+  const destinationIds = Array.from(new Set(reviews.map((r) => r.destinationId)));
+  await Promise.all(destinationIds.map((id) => recomputeDestinationRating(id)));
 }

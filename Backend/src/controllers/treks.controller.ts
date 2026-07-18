@@ -5,6 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { qs } from "../utils/sanitize";
 import { parsePagination } from "../utils/pagination";
 import { makeAdminCrud } from "../utils/crudFactory";
+import { cascadeTrekReferences } from "../services/cascade.service";
 
 const TREK_FIELDS = [
   "slug", "name", "region", "districtIds", "tagline", "description", "heroImage", "gallery",
@@ -43,8 +44,6 @@ export const getTrek = asyncHandler(async (req: Request, res: Response) => {
 });
 
 // --- Admin CRUD ---
-// No onDeleted cascade needed: nothing else in the schema references a Trek by
-// id (it only points outward at districtIds, never the other way round).
 
 const crud = makeAdminCrud(Trek, {
   fields: TREK_FIELDS,
@@ -52,7 +51,9 @@ const crud = makeAdminCrud(Trek, {
   notFoundMessage: "Trek not found",
   imageFields: ["heroImage"],
   galleryFields: ["gallery"],
-  checkSlugConflict: true
+  checkSlugConflict: true,
+  // A trip plan's `trekIds` snapshot would otherwise dangle on a deleted trek.
+  onDeleted: (doc) => cascadeTrekReferences(doc.id as string)
 });
 
 export const createTrek = crud.create;
