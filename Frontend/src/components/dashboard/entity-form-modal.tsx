@@ -1,7 +1,9 @@
 "use client";
 import { X, Loader2 } from "lucide-react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { useFocusTrap } from "@/hooks/use-focus-trap";
 import type { ReactNode } from "react";
 
 interface EntityFormModalProps {
@@ -18,11 +20,21 @@ interface EntityFormModalProps {
 export function EntityFormModal({
   title, onClose, onSubmit, submitting, error, children, submitLabel = "Save",
 }: EntityFormModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(true, dialogRef, onClose);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="entity-form-modal-title"
+        tabIndex={-1}
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl"
+      >
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <h2 className="font-display text-lg font-semibold text-brand-600">{title}</h2>
+          <h2 id="entity-form-modal-title" className="font-display text-lg font-semibold text-brand-600">{title}</h2>
           <button
             type="button"
             onClick={onClose}
