@@ -665,6 +665,36 @@
       "publicId": "nepalyatra/destinations/unsplash_1578235107258-f6e405a4ffc0",
       "width": 1600,
       "height": 1280
+    },
+    "1753129557585-1121b904bca4": {
+      "url": "https://res.cloudinary.com/dnftsx4f5/image/upload/v1784367987/nepalyatra/gallery/unsplash_1753129557585-1121b904bca4.jpg",
+      "publicId": "nepalyatra/gallery/unsplash_1753129557585-1121b904bca4",
+      "width": 1600,
+      "height": 1067
+    },
+    "1753155438861-97e8d0025742": {
+      "url": "https://res.cloudinary.com/dnftsx4f5/image/upload/v1784367989/nepalyatra/gallery/unsplash_1753155438861-97e8d0025742.jpg",
+      "publicId": "nepalyatra/gallery/unsplash_1753155438861-97e8d0025742",
+      "width": 1600,
+      "height": 1067
+    },
+    "1684230715200-40f32e068bf2": {
+      "url": "https://res.cloudinary.com/dnftsx4f5/image/upload/v1784367991/nepalyatra/gallery/unsplash_1684230715200-40f32e068bf2.jpg",
+      "publicId": "nepalyatra/gallery/unsplash_1684230715200-40f32e068bf2",
+      "width": 1600,
+      "height": 1067
+    },
+    "1711553186815-8fbc95d02155": {
+      "url": "https://res.cloudinary.com/dnftsx4f5/image/upload/v1784367993/nepalyatra/gallery/unsplash_1711553186815-8fbc95d02155.jpg",
+      "publicId": "nepalyatra/gallery/unsplash_1711553186815-8fbc95d02155",
+      "width": 1600,
+      "height": 1280
+    },
+    "1771259664184-0328a372b5fd": {
+      "url": "https://res.cloudinary.com/dnftsx4f5/image/upload/v1784367994/nepalyatra/gallery/unsplash_1771259664184-0328a372b5fd.jpg",
+      "publicId": "nepalyatra/gallery/unsplash_1771259664184-0328a372b5fd",
+      "width": 1600,
+      "height": 1068
     }
   },
   "pravatar": {

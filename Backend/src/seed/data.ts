@@ -833,7 +833,7 @@ export const destinations = [
       { name: "Rooftop Cafes", description: "Sweeping views over the dome and prayer flags." },
       { name: "Monasteries", description: "Dozens of active gompas ring the stupa." }
     ],
-    activities: ["Evening kora walk", "Butter-lamp offering", "Rooftop coffee", "Monastery visit"],
+    activities: ["Evening kora walk", "Butter-lamp offering"],
     restaurants: [{ name: "Garden Kitchen", cuisine: "Tibetan", priceRange: "$$" }, { name: "Flavors Cafe", cuisine: "Continental", priceRange: "$$" }],
     localFoods: ["Thukpa", "Tibetan bread", "Momo", "Butter tea"],
     travelTips: ["Walk clockwise around the stupa.", "Sunset is the most atmospheric time.", "Support local Tibetan handicraft shops."],
@@ -878,7 +878,7 @@ export const destinations = [
       { name: "Sunrise Viewpoint", description: "Tower platform facing the Himalayas." },
       { name: "Paragliding launch", description: "One of the world's best tandem flying sites." }
     ],
-    activities: ["Sunrise viewing", "Paragliding", "Mountain biking", "Hiking"],
+    activities: ["Mountain biking", "Hiking"],
     restaurants: [{ name: "Sunrise Cafe", cuisine: "Nepali", priceRange: "$" }],
     localFoods: ["Tea & pakoda", "Dal bhat", "Roasted corn"],
     travelTips: ["Leave Pokhara by 4:30am for sunrise.", "Bring a warm layer — mornings are cold.", "Book paragliding a day ahead in peak season."],
@@ -924,7 +924,13 @@ export const destinations = [
       { name: "Canoe ride", description: "Drift past gharial crocodiles on the Rapti river." },
       { name: "Tharu Village", description: "Experience indigenous Tharu culture and dance." }
     ],
-    activities: ["Jeep safari", "Canoeing", "Bird watching", "Jungle walk", "Elephant breeding centre"],
+    // "Jeep safari" and "Canoeing" are deliberately left out here — they're
+    // the same real activities already listed above in `attractions` (as
+    // "Jeep Safari" / "Canoe ride"), just phrased slightly differently. The
+    // itinerary auto-suggestion merges this list with `attractions` into one
+    // highlight pool, so a near-duplicate here showed up as a second,
+    // seemingly distinct suggestion on a later day.
+    activities: ["Bird watching", "Jungle walk", "Elephant breeding centre"],
     restaurants: [{ name: "Jungle Lodge Dining", cuisine: "Nepali / Tharu", priceRange: "$$" }],
     localFoods: ["Tharu thali", "Fish curry", "Dhikri", "Ghonghi"],
     travelTips: ["Book a licensed guide for safaris.", "Dawn and dusk give the best wildlife sightings.", "Wear neutral colours."],
@@ -947,7 +953,7 @@ export const destinations = [
       { name: "Patan Museum", description: "One of South Asia's finest museums." },
       { name: "Golden Temple", description: "Ornate Buddhist monastery nearby." }
     ],
-    activities: ["Museum visit", "Heritage walk", "Metal-craft shopping", "Photography"],
+    activities: ["Heritage walk", "Metal-craft shopping", "Photography"],
     restaurants: [{ name: "Cafe du Temple", cuisine: "Continental", priceRange: "$$" }, { name: "The Old House", cuisine: "French", priceRange: "$$$" }],
     localFoods: ["Newari khaja set", "Bara", "Wo", "Aila"],
     travelTips: ["Don't miss the Patan Museum.", "Browse the metal workshops in the back lanes.", "Combine with central Kathmandu in one day."],
@@ -970,7 +976,7 @@ export const destinations = [
       { name: "Sky Caves", description: "Thousands of cliff-cut caves of unknown origin." },
       { name: "Tiji Festival", description: "Vivid three-day monastic festival." }
     ],
-    activities: ["Trekking", "Monastery visits", "Festival viewing", "Cultural immersion"],
+    activities: ["Trekking", "Monastery visits", "Cultural immersion"],
     restaurants: [{ name: "Teahouse lodges", cuisine: "Tibetan / Nepali", priceRange: "$$" }],
     localFoods: ["Tsampa", "Thukpa", "Yak meat", "Seabuckthorn juice"],
     travelTips: ["A special restricted-area permit is required.", "Trek in monsoon — Mustang lies in a rain shadow.", "Go for the Tiji festival in spring."],
@@ -1024,7 +1030,7 @@ export const destinations = [
     { name: "Pathibhara Cable Car Station", description: "A gondola shortcut that lifts pilgrims above the forest line to near the summit shrine." },
     { name: "Ridge-top Prayer Flags", description: "Rows of fluttering prayer flags marking the meeting point of Hindu and Kirat worship." }
   ],
-  activities: ["Pilgrimage", "Hiking", "Cable car ride", "Photography"],
+  activities: ["Pilgrimage", "Hiking", "Photography"],
   restaurants: [
     { name: "Pathibhara Bhojanalaya", cuisine: "Nepali", priceRange: "$" }
   ],
@@ -1080,7 +1086,7 @@ export const destinations = [
     { name: "Halesi Mahadev Cave Temple", description: "A limestone cave shrine said to hold Lord Shiva's presence within its rock formations." },
     { name: "Pilgrim Trail Shrines", description: "A string of smaller shrines and rest points along the forested path to the main cave." }
   ],
-  activities: ["Pilgrimage", "Cave exploration", "Hiking", "Photography"],
+  activities: ["Pilgrimage", "Hiking", "Photography"],
   restaurants: [
     { name: "Halesi Annapurna Bhojanalaya", cuisine: "Nepali", priceRange: "$" }
   ],
@@ -1136,7 +1142,7 @@ export const destinations = [
     { name: "Dhankuta Main Street", description: "A tree-shaded avenue of Newar-style buildings that gives the town its famously clean character." },
     { name: "Orange Orchard Trails", description: "Terraced citrus orchards ringing the town, at their best during harvest season." }
   ],
-  activities: ["Walking tours", "Orchard visits", "Photography", "Local market browsing"],
+  activities: ["Walking tours", "Photography", "Local market browsing"],
   restaurants: [
     { name: "Dhankuta Chiya Ghar", cuisine: "Nepali", priceRange: "$" }
   ],
@@ -1248,7 +1254,7 @@ export const destinations = [
     { name: "Phidim Tea Gardens", description: "Terraced tea estates draped over misty ridgelines around the district headquarters." },
     { name: "Limbu Village Trails", description: "Forest paths connecting traditional Limbu hamlets with handwoven textile traditions." }
   ],
-  activities: ["Tea garden walks", "Village homestays", "Hiking", "Photography"],
+  activities: ["Village homestays", "Hiking", "Photography"],
   restaurants: [
     { name: "Phidim Chiya Bhatti", cuisine: "Nepali", priceRange: "$" }
   ],
@@ -1276,7 +1282,7 @@ export const destinations = [
     { name: "Kanyam Tea Garden", description: "Ilam's most photographed tea estate, with sweeping terraces framed by distant hills." },
     { name: "Antu Danda Sunrise Point", description: "A ridge lookout famous for sunrise views over layered hills toward the plains." }
   ],
-  activities: ["Tea garden walks", "Factory tours", "Sunrise viewing", "Photography"],
+  activities: ["Factory tours", "Photography"],
   restaurants: [
     { name: "Ilam Tea House Cafe", cuisine: "Nepali/Continental", priceRange: "$$" },
     { name: "Kanyam View Restaurant", cuisine: "Nepali", priceRange: "$" }
@@ -1305,7 +1311,7 @@ export const destinations = [
     { name: "Mai Pokhari Wooden Walkway", description: "A circular boardwalk tracing the edge of the sacred lake through the forest." },
     { name: "Bird Sanctuary Grounds", description: "Forest surrounds hosting migratory birds through the cooler months." }
   ],
-  activities: ["Nature walks", "Bird watching", "Pilgrimage", "Photography"],
+  activities: ["Nature walks", "Pilgrimage", "Photography"],
   restaurants: [
     { name: "Mai Pokhari Forest Cafe", cuisine: "Nepali", priceRange: "$" }
   ],
@@ -1333,7 +1339,7 @@ export const destinations = [
     { name: "Mechi Bridge Border Crossing", description: "The busy road bridge over the Mechi River linking Nepal and India." },
     { name: "Kakarbhitta Market Street", description: "A lively strip of shops and stalls trading in goods from both sides of the border." }
   ],
-  activities: ["Market browsing", "Border sightseeing", "Local food tasting"],
+  activities: ["Local food tasting"],
   restaurants: [
     { name: "Mechi Riverside Restaurant", cuisine: "Nepali/Indian", priceRange: "$" }
   ],
@@ -1361,7 +1367,7 @@ export const destinations = [
     { name: "Birtamod Tea Estates", description: "Flat-land tea gardens that supply much of eastern Nepal's tea trade." },
     { name: "Cardamom Farm Trails", description: "Shaded farm paths through cardamom groves typical of the Jhapa lowlands." }
   ],
-  activities: ["Cycling", "Farm visits", "Photography", "Village walks"],
+  activities: ["Cycling", "Photography", "Village walks"],
   restaurants: [
     { name: "Birtamod Farmhouse Kitchen", cuisine: "Nepali", priceRange: "$" }
   ],
@@ -1445,7 +1451,7 @@ export const destinations = [
     { name: "Dantakali Temple", description: "A hillside Shakti temple that draws devotees from across the eastern Terai." },
     { name: "Bhanu Park", description: "A leafy central park popular for evening strolls and city views." }
   ],
-  activities: ["Temple visits", "City walks", "Local food tours", "Shopping"],
+  activities: ["City walks", "Local food tours", "Shopping"],
   restaurants: [
     { name: "Dharan Momo House", cuisine: "Nepali/Tibetan", priceRange: "$" },
     { name: "Hilltop Bhojanalaya", cuisine: "Nepali", priceRange: "$$" }
@@ -1502,7 +1508,7 @@ export const destinations = [
     { name: "Triyuga River Ghat", description: "A peaceful riverside bathing and picnic spot popular with local families." },
     { name: "Chure Community Forest", description: "A community-managed forest reserve on the district's low Chure hills." }
   ],
-  activities: ["River walks", "Hiking", "Picnicking", "Bird watching"],
+  activities: ["Hiking", "Picnicking", "Bird watching"],
   restaurants: [
     { name: "Gaighat Riverside Kitchen", cuisine: "Nepali", priceRange: "$" }
   ],
@@ -1557,7 +1563,7 @@ export const destinations = [
     { name: "Dudheswor Nath Temple", description: "An ancient Shiva shrine and the district's most important pilgrimage site." },
     { name: "Siraha Village Ponds", description: "Placid ponds ringed with banyan trees, used for ritual bathing before darshan." }
   ],
-  activities: ["Temple darshan", "Shivaratri fair visit", "Rural cycling", "Bird watching at ponds"],
+  activities: ["Shivaratri fair visit", "Rural cycling"],
   restaurants: [{ name: "Siraha Annapurna Bhojanalaya", cuisine: "Nepali Terai", priceRange: "$" }],
   localFoods: ["Chiura-Dahi", "Litti Chokha", "Sel Roti"],
   travelTips: ["Shivaratri draws huge crowds — arrive early", "Modest dress expected at the temple"],
@@ -1583,7 +1589,7 @@ export const destinations = [
     { name: "Janaki Mandir", description: "A three-storey marble and pink-domed temple built in 1911, one of South Asia's most striking pilgrimage shrines." },
     { name: "Vivaha Panchami Procession Route", description: "The ceremonial path re-enacting the divine wedding of Ram and Sita, thronged each year by pilgrims." }
   ],
-  activities: ["Temple darshan", "Vivaha Panchami festival watching", "Evening aarti", "Heritage photography"],
+  activities: ["Evening aarti", "Heritage photography"],
   restaurants: [{ name: "Janakpur Dham Bhojanalaya", cuisine: "Maithili Vegetarian", priceRange: "$" }, { name: "Sita Restaurant", cuisine: "Nepali Thali", priceRange: "$$" }],
   localFoods: ["Thekuwa", "Khaja Set", "Malpuwa"],
   travelTips: ["Book lodging early during Vivaha Panchami", "Cover shoulders and knees inside the temple complex"],
@@ -1687,7 +1693,7 @@ export const destinations = [
     { name: "Ancient Mounds of Rautahat", description: "Unexcavated earthen mounds believed to hold traces of early Terai settlement." },
     { name: "Gaur Border Bazaar", description: "A frontier market trading goods across the nearby Indo-Nepal border." }
   ],
-  activities: ["Bazaar exploration", "Local history walks", "Street food tasting", "Photography"],
+  activities: ["Local history walks", "Street food tasting", "Photography"],
   restaurants: [{ name: "Gaur Junction Bhojanalaya", cuisine: "Indo-Nepali", priceRange: "$" }],
   localFoods: ["Litti Chokha", "Jalebi", "Chana Ghugni"],
   travelTips: ["Carry your passport/ID near the border area", "Bazaars are busiest in the morning"],
@@ -1713,7 +1719,7 @@ export const destinations = [
     { name: "Simara Domestic Airport", description: "Nepal's second-busiest domestic airport, a hub connecting the central Terai to Kathmandu." },
     { name: "Kalaiya Cottage Industries", description: "Small-scale mills and workshops producing textiles, oil, and grain products." }
   ],
-  activities: ["Plane-spotting at Simara", "Cottage industry visits", "Local market shopping", "Day-trip base for the region"],
+  activities: ["Local market shopping", "Day-trip base for the region"],
   restaurants: [{ name: "Kalaiya Junction Restaurant", cuisine: "Nepali Terai", priceRange: "$" }],
   localFoods: ["Aloo Paratha", "Chana Tarkari", "Rasgulla"],
   travelTips: ["Useful transit stop rather than a long-stay destination", "Book Simara flights in advance during festival season"],
@@ -1791,7 +1797,7 @@ export const destinations = [
     { name: "Tinpatan Forest Trail", description: "A shaded walking trail through sal and sissoo forest alive with birdsong." },
     { name: "Chure Foothill Lookout", description: "A modest rise offering views over the forest canopy toward the Kamala valley." }
   ],
-  activities: ["Forest walking", "Birdwatching", "Highway road-trip stopover", "Photography"],
+  activities: ["Birdwatching", "Highway road-trip stopover", "Photography"],
   restaurants: [ { name: "Highway Bhojanalaya", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Dhindo", "Gundruk soup"],
   travelTips: ["Best visited as a stopover on the Mahendra Highway rather than a standalone trip.", "Carry water; shade is good but facilities are sparse."],
@@ -1916,7 +1922,7 @@ export const destinations = [
     { name: "Bhimeshwor Temple Courtyard", description: "An ancient pagoda-style shrine wrapped in prayer flags and incense smoke." },
     { name: "Charikot Bazaar Walk", description: "A hillside market street selling puja items, tea and mountain produce." }
   ],
-  activities: ["Temple visits", "Pilgrimage rituals", "Bazaar shopping", "Short hill walks"],
+  activities: ["Pilgrimage rituals", "Short hill walks"],
   restaurants: [ { name: "Charikot Bhojanalaya", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Prasad sweets", "Dal bhat"],
   travelTips: ["Dress modestly when entering the temple courtyard.", "Fridays and festival days draw the largest crowds of pilgrims."],
@@ -1991,7 +1997,7 @@ export const destinations = [
     { name: "Dhulikhel Sunrise Viewpoint", description: "A hilltop lookout famed for panoramic sunrise views over the eastern Himalaya." },
     { name: "Old Dhulikhel Newari Town", description: "Narrow lanes of carved wood facades and quiet temple courtyards." }
   ],
-  activities: ["Sunrise viewing", "Heritage walks", "Short hill hikes", "Photography"],
+  activities: ["Heritage walks", "Short hill hikes", "Photography"],
   restaurants: [ { name: "Dhulikhel Mountain View Cafe", cuisine: "Nepali/Continental", priceRange: "$$" } ],
   localFoods: ["Newari khaja set", "Chatamari"],
   travelTips: ["Arrive before dawn for the clearest mountain visibility.", "Combine with a walk down to Namobuddha for a full day trip."],
@@ -2066,7 +2072,7 @@ export const destinations = [
     { name: "Trishuli Rapids Run", description: "A classic half-day to two-day rafting stretch with grade II-IV rapids." },
     { name: "Riverside Beach Camps", description: "Sandy riverbanks used for overnight rafting camps under the stars." }
   ],
-  activities: ["White-water rafting", "Riverside camping", "Kayaking", "Beach relaxation"],
+  activities: ["Kayaking", "Beach relaxation"],
   restaurants: [ { name: "Trishuli Riverside Camp Kitchen", cuisine: "Nepali/Continental", priceRange: "$$" } ],
   localFoods: ["Camp-style dal bhat", "Grilled fish"],
   travelTips: ["Book through a licensed rafting operator with certified guides and gear.", "Water levels and rapid grades vary by season — ask ahead."],
@@ -2091,7 +2097,7 @@ export const destinations = [
     { name: "Langtang Lirung Viewpoint", description: "Close-up views of the valley's dominant 7,227m glaciated peak." },
     { name: "Tamang Village Trail", description: "Stone-built villages along the trail rebuilt after the 2015 earthquake, rich in Tamang tradition." }
   ],
-  activities: ["Multi-day trekking", "Glacier viewing", "Village homestays", "Yak cheese tasting"],
+  activities: ["Multi-day trekking", "Village homestays", "Yak cheese tasting"],
   restaurants: [ { name: "Langtang Teahouse Kitchen", cuisine: "Nepali/Tibetan", priceRange: "$" } ],
   localFoods: ["Yak cheese", "Tibetan bread", "Thukpa"],
   travelTips: ["Acclimatize carefully — the valley climbs quickly in altitude.", "Permits (TIMS and Langtang National Park entry) are required."],
@@ -2116,7 +2122,7 @@ export const destinations = [
     { name: "Rasuwagadhi Border Gate", description: "Nepal's northern land border crossing into the Tibet Autonomous Region." },
     { name: "Bhote Koshi Gorge", description: "A steep river gorge carrying glacial meltwater down from the Tibetan plateau." }
   ],
-  activities: ["Border-town exploration", "Gorge viewing", "Cross-cultural trade watching"],
+  activities: ["Border-town exploration", "Cross-cultural trade watching"],
   restaurants: [ { name: "Frontier Bhatti", cuisine: "Nepali/Tibetan", priceRange: "$" } ],
   localFoods: ["Thukpa", "Butter tea"],
   travelTips: ["Border crossing requires proper permits and is subject to periodic closures.", "Roads here can be affected by landslides — check conditions ahead."],
@@ -2166,7 +2172,7 @@ export const destinations = [
     { name: "Ridge-top Terrace Villages", description: "Traditional hill villages with sweeping views over the Prithvi Highway valley." },
     { name: "Ankhu Khola Viewpoint", description: "A hillside lookout over the Ankhu Khola river valley below." }
   ],
-  activities: ["Village walks", "Terrace-farm visits", "Sunset viewing"],
+  activities: ["Village walks"],
   restaurants: [ { name: "Dhading Besi Diner", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Dal bhat", "Sel roti"],
   travelTips: ["A good stop for travelers driving the Prithvi Highway between Kathmandu and Pokhara.", "Local festivals are worth timing a visit around if possible."],
@@ -2216,7 +2222,7 @@ export const destinations = [
     { name: "Chure Range Forest Trail", description: "A gentle forest hiking route through the Chure hills' protective tree cover." },
     { name: "Hetauda Forest Stream", description: "A clear hill stream popular for a cooling break during forest walks." }
   ],
-  activities: ["Forest hiking", "Wildlife spotting", "Stream picnicking"],
+  activities: ["Wildlife spotting", "Stream picnicking"],
   restaurants: [ { name: "Hetauda Forest View Cafe", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Dal bhat", "Local forest honey"],
   travelTips: ["Best explored with a local guide familiar with the forest trails.", "Combine with a visit to Kulekhani reservoir for a fuller day."],
@@ -2290,7 +2296,7 @@ export const destinations = [
     { name: "Marsyangdi Riverside Trail", description: "The trekking route follows the thundering Marsyangdi gorge through terraced villages and pine forest." },
     { name: "Besisahar Trailhead Market", description: "A lively supply town where trekkers stock up before the multi-day circuit trek." }
   ],
-  activities: ["Trekking permits and prep", "River-side walking", "Local market browsing", "Jeep touring to inner villages"],
+  activities: ["Trekking permits and prep", "Jeep touring to inner villages"],
   restaurants: [ { name: "Marsyangdi View Restaurant", cuisine: "Nepali", priceRange: "$" }, { name: "Circuit Cafe", cuisine: "Cafe", priceRange: "$" } ],
   localFoods: ["Dal bhat set", "Thukpa", "Milk tea"],
   travelTips: ["Register your TIMS card and ACAP permit here before trekking", "Jeeps can shorten early stages of the circuit if time is limited"],
@@ -2314,7 +2320,7 @@ export const destinations = [
     { name: "Traditional Gurung Homestays", description: "Family-run stone homes offering home-cooked meals and cultural exchange with Gurung hosts." },
     { name: "Ridge-top Mountain Panorama", description: "Uninterrupted views spanning Annapurna II, Lamjung Himal and Manaslu on clear days." }
   ],
-  activities: ["Homestay experience", "Cultural dance evenings", "Short ridge hikes", "Photography"],
+  activities: ["Cultural dance evenings", "Photography"],
   restaurants: [ { name: "Ghale Gaun Community Kitchen", cuisine: "Gurung", priceRange: "$" } ],
   localFoods: ["Kodo ko roti (millet bread)", "Local pork curry", "Jaad (millet drink)"],
   travelTips: ["Book homestays in advance through the village tourism committee", "Bring warm layers — evenings turn cold even outside peak winter"],
@@ -2338,7 +2344,7 @@ export const destinations = [
     { name: "Seti-Madi Confluence Point", description: "A striking meeting of two rivers of differing color and current, popular for picnics and photos." },
     { name: "Riverside Kayaking Base", description: "Local outfitters run beginner-friendly kayaking and rafting trips on the calmer Seti Gandaki stretches." }
   ],
-  activities: ["Kayaking", "Riverside picnicking", "Fishing", "Photography"],
+  activities: ["Riverside picnicking", "Fishing", "Photography"],
   restaurants: [ { name: "Damauli Riverside Diner", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Fresh river fish curry", "Dal bhat", "Sel roti"],
   travelTips: ["Best water levels for kayaking are just after monsoon", "Wear a life jacket even in calmer sections"],
@@ -2386,7 +2392,7 @@ export const destinations = [
     { name: "Waling Apple Orchards", description: "Terraced orchards producing some of the region's best apples, especially vivid during autumn harvest." },
     { name: "Waling Bazaar Street Market", description: "A busy trading street where hill-farm produce meets everyday commerce." }
   ],
-  activities: ["Orchard visits", "Local market walks", "Short ridge hikes", "Photography"],
+  activities: ["Short ridge hikes", "Photography"],
   restaurants: [ { name: "Waling Bazaar Bhojanalaya", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Fresh local apples", "Dal bhat", "Roadside momo"],
   travelTips: ["Visit during October-November for apple harvest season", "Bargain politely at the produce market"],
@@ -2410,7 +2416,7 @@ export const destinations = [
     { name: "Aandhi Khola Riverside Trail", description: "A gentle river-side walking path through terraced farmland and small hill hamlets." },
     { name: "Terraced Rice Paddies", description: "Emerald terraces climbing the valley walls, especially vivid during the monsoon growing season." }
   ],
-  activities: ["Riverside walking", "Village visits", "Birdwatching", "Photography"],
+  activities: ["Village visits", "Birdwatching", "Photography"],
   restaurants: [ { name: "Valley View Bhatti", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Gundruk soup", "Steamed rice with local greens", "Buffalo curry"],
   travelTips: ["Best explored with a local guide since trails are unsigned", "Carry water — few shops along the valley path"],
@@ -2506,7 +2512,7 @@ export const destinations = [
     { name: "Dana Rhododendron Forest", description: "Thick forest bursting into red and pink bloom each spring along the Dhaulagiri approach trail." },
     { name: "Dobato Ridge Panorama", description: "A high ridge camp offering a wraparound view of both Dhaulagiri and Annapurna South." }
   ],
-  activities: ["Multi-day trekking", "Forest walking", "Mountain photography", "Birdwatching"],
+  activities: ["Multi-day trekking", "Mountain photography", "Birdwatching"],
   restaurants: [ { name: "Dana Trailside Lodge", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Dal bhat", "Buckwheat pancakes", "Ginger tea"],
   travelTips: ["Spring rhododendron bloom is late March to April", "Trail can be muddy just after monsoon"],
@@ -2530,7 +2536,7 @@ export const destinations = [
     { name: "Kali Gandaki Gorge Viewpoint", description: "A ridge-top vantage overlooking one of the deepest river gorges on Earth." },
     { name: "Baglung Suspension Bridges", description: "Long steel-cable bridges swaying above tributary gorges, connecting remote hill villages." }
   ],
-  activities: ["Gorge viewing", "Suspension bridge crossing", "Local market visits", "Photography"],
+  activities: ["Local market visits", "Photography"],
   restaurants: [ { name: "Baglung Bazaar Bhojanalaya", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Dal bhat", "Sel roti", "Local dried fish"],
   travelTips: ["Cross suspension bridges one at a time for safety", "Roads toward Dolpa can be rough — check conditions ahead"],
@@ -2554,7 +2560,7 @@ export const destinations = [
     { name: "Kalika Temple Ridge", description: "A small hilltop shrine dedicated to the goddess Kalika, popular with local pilgrims." },
     { name: "Valley Overlook", description: "A quiet viewpoint looking down over Baglung bazaar and the Kali Gandaki valley below." }
   ],
-  activities: ["Temple visits", "Sunrise viewing", "Short ridge walks", "Photography"],
+  activities: ["Photography"],
   restaurants: [ { name: "Ridge View Teashop", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Tea and roasted corn", "Dal bhat", "Local pickles"],
   travelTips: ["Best visited around sunrise for the clearest valley views", "A short but steep 30-minute climb from the bazaar"],
@@ -2578,7 +2584,7 @@ export const destinations = [
     { name: "Kushma Bungee Bridge", description: "One of Nepal's highest bungee platforms, suspended over the deep Kali Gandaki gorge." },
     { name: "Gorge Swing Point", description: "A giant canyon swing offering a gentler adrenaline alternative beside the main bungee site." }
   ],
-  activities: ["Bungee jumping", "Canyon swinging", "Gorge photography", "Riverside walking"],
+  activities: ["Gorge photography", "Riverside walking"],
   restaurants: [ { name: "Gorge View Cafe", cuisine: "Nepali-Continental", priceRange: "$" } ],
   localFoods: ["Dal bhat", "Momo", "Local apple cider"],
   travelTips: ["Book bungee slots in advance during peak season weekends", "Minimum age and weight restrictions apply — check ahead"],
@@ -2626,7 +2632,7 @@ export const destinations = [
     { name: "Devghat River Confluence", description: "The sacred meeting point of the Kali Gandaki and Trishuli rivers, forming the Narayani." },
     { name: "Riverside Ashrams", description: "A cluster of ashrams and rest houses where elderly pilgrims often spend their final years in devotion." }
   ],
-  activities: ["Pilgrimage rituals", "Riverside walking", "Ashram visits", "Boating"],
+  activities: ["Pilgrimage rituals", "Riverside walking", "Boating"],
   restaurants: [ { name: "Devghat Pilgrim Bhojanalaya", cuisine: "Nepali Vegetarian", priceRange: "$" } ],
   localFoods: ["Vegetarian thali", "Puri-tarkari", "Sweet lassi"],
   travelTips: ["Dress modestly when visiting ghats and ashrams", "Major Hindu festival days bring large pilgrim crowds"],
@@ -2675,7 +2681,7 @@ export const destinations = [
     { name: "Malika Danda Ridge", description: "The forest's highest point, ringed with prayer flags and a wide Himalayan panorama." },
     { name: "Resunga Temple Shrine", description: "A modest hilltop shrine that draws local pilgrims on full-moon days." }
   ],
-  activities: ["Ridge hiking", "Birdwatching", "Sunrise viewing", "Picnicking"],
+  activities: ["Birdwatching", "Sunrise viewing", "Picnicking"],
   restaurants: [ { name: "Tamghas Bhanchha Ghar", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Dhindo", "Gundruk soup", "Mountain honey"],
   travelTips: ["Start the climb before dawn for clear Dhaulagiri views", "Carry warm layers even in autumn — the ridge is windy"],
@@ -2795,7 +2801,7 @@ export const destinations = [
     { name: "Terraced Farmland Belt", description: "Layered rice and millet terraces climbing the hillsides around Sandhikharka." },
     { name: "Hilltop Village Hamlets", description: "Small settlements offering an honest look at everyday mid-hill life." }
   ],
-  activities: ["Village walking", "Homestay visits", "Farm life observation"],
+  activities: ["Homestay visits"],
   restaurants: [ { name: "Sandhikharka Bhojanalaya", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Dhindo", "Kodo ko roti", "Local seasonal vegetables"],
   travelTips: ["Arrange a local guide since trails are unmarked", "Ask before photographing villagers or homes"],
@@ -2819,7 +2825,7 @@ export const destinations = [
     { name: "Eastern Gate Ruins", description: "Believed to be the gate through which young Siddhartha rode out to encounter old age, sickness and death." },
     { name: "Tilaurakot Site Museum", description: "A small on-site museum displaying pottery and coins recovered from the palace excavation." }
   ],
-  activities: ["Archaeological site touring", "Meditation", "Museum visits", "Photography"],
+  activities: ["Archaeological site touring", "Meditation", "Photography"],
   restaurants: [ { name: "Taulihawa Dining Hall", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Terai dal-bhat", "Litti chokha", "Sel roti"],
   travelTips: ["Hire a site guide to make sense of the low brick foundations", "Visit early morning to avoid the Terai midday heat"],
@@ -2916,7 +2922,7 @@ export const destinations = [
     { name: "Sal Forest Trail", description: "A shaded footpath through dense sal forest, good for spotting deer and langurs at dawn." },
     { name: "Community Forest Watchtower", description: "A simple wooden tower used by locals to spot wildlife and forest fires." }
   ],
-  activities: ["Forest walking", "Birdwatching", "Wildlife spotting", "Village visits"],
+  activities: ["Birdwatching", "Wildlife spotting", "Village visits"],
   restaurants: [ { name: "Parasi Bhojanalaya", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Terai dal-bhat", "Sel roti"],
   travelTips: ["Go with a local community forest guide for the best wildlife sightings", "Early morning offers the coolest and most active wildlife hours"],
@@ -2940,7 +2946,7 @@ export const destinations = [
     { name: "Daunne Ridge Lookout", description: "A roadside viewpoint with sweeping views over the Terai plains below." },
     { name: "Pine and Sal Mixed Forest", description: "Cool forest cover along the ridge, a favorite rest stop for highway travelers." }
   ],
-  activities: ["Roadside sightseeing", "Photography", "Short forest walks"],
+  activities: ["Roadside sightseeing", "Photography"],
   restaurants: [ { name: "Daunne Highway Dhaba", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Milk tea", "Momo", "Instant noodles"],
   travelTips: ["Popular rest stop on the Butwal-Narayangadh highway drive", "Weekends can be busy with passing travelers"],
@@ -2988,7 +2994,7 @@ export const destinations = [
     { name: "Traditional Tharu Village", description: "A cluster of mud-and-thatch homes showcasing traditional Tharu building and craft techniques." },
     { name: "Tharu Cultural Dance Ground", description: "A community space where stick dances and folk performances are held during festivals." }
   ],
-  activities: ["Cultural tours", "Traditional dance viewing", "Craft shopping", "Village walks"],
+  activities: ["Cultural tours", "Craft shopping"],
   restaurants: [ { name: "Tulsipur Village Bhojanalaya", cuisine: "Tharu/Nepali", priceRange: "$" } ],
   localFoods: ["Tharu-style fish curry", "Ghonghi (snail curry)", "Dhikri"],
   travelTips: ["Ask locally about festival dates to catch a live dance performance", "Respect photography boundaries in residential areas"],
@@ -3084,7 +3090,7 @@ export const destinations = [
     { name: "Traditional Magar Village", description: "Stone-walled homes and terraced fields showcasing highland Magar building traditions." },
     { name: "Rhododendron Ridge Forest", description: "Forested ridgeline bursting into bloom each spring along the trail." }
   ],
-  activities: ["Village trekking", "Cultural exchange", "Homestays", "Photography"],
+  activities: ["Cultural exchange", "Homestays", "Photography"],
   restaurants: [ { name: "Liwang Village Kitchen", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Dhindo", "Kodo ko roti", "Wild greens"],
   travelTips: ["Hire a local guide familiar with Magar customs", "Spring visits catch the rhododendron bloom"],
@@ -3108,7 +3114,7 @@ export const destinations = [
     { name: "Musikot Ridge Trail", description: "A climbing path above town offering views over the surrounding terraced hills." },
     { name: "Traditional Hill Village", description: "A settlement of stone-and-timber homes little changed by modern development." }
   ],
-  activities: ["Village trekking", "Homestays", "Photography", "Cultural exchange"],
+  activities: ["Homestays", "Photography", "Cultural exchange"],
   restaurants: [ { name: "Musikot Bhojanalaya", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["Dhindo", "Kodo ko roti", "Local dairy"],
   travelTips: ["Roads and trails can be rough — allow extra travel time", "Arrange a local guide since English is limited"],
@@ -3132,7 +3138,7 @@ export const destinations = [
     { name: "Sani Bheri Riverbank", description: "Rocky riverside stretches good for a rest stop or simple picnic." },
     { name: "Riverside Village Cluster", description: "Small farming settlements strung along the river's course." }
   ],
-  activities: ["Riverside walking", "Village visits", "Photography", "Fishing"],
+  activities: ["Photography", "Fishing"],
   restaurants: [ { name: "Musikot Bhojanalaya", cuisine: "Nepali", priceRange: "$" } ],
   localFoods: ["River fish curry", "Dhindo"],
   travelTips: ["Lower elevation makes this accessible even in winter", "Check river levels before planning riverside walks after monsoon"],
@@ -3156,7 +3162,7 @@ export const destinations = [
     { name: "Nepalgunj Central Bazaar", description: "A dense commercial strip of spice traders, tailors and border-trade shops." },
     { name: "Bageshwori Temple", description: "A revered Kali shrine that draws devotees from both sides of the nearby border." }
   ],
-  activities: ["Bazaar walking", "Temple visits", "Street food tasting", "Day trips to Bardia"],
+  activities: ["Street food tasting", "Day trips to Bardia"],
   restaurants: [ { name: "Nepalgunj Awadhi Kitchen", cuisine: "Awadhi/Nepali", priceRange: "$$" } ],
   localFoods: ["Litti chokha", "Terai-style biryani", "Sel roti"],
   travelTips: ["Use Nepalgunj as a launch point for Bardia National Park", "Summer heat is intense — plan outdoor activities for early morning"],
@@ -3228,7 +3234,7 @@ export const destinations = [
     { name: "Traditional Tharu Fishing Village", description: "Riverside settlements where locals still fish the Karnali using traditional nets and dugout canoes." },
     { name: "Karnali Riverside Ghats", description: "Sandy river banks used for bathing, boat launches and seasonal farming." }
   ],
-  activities: ["Village tours", "Traditional fishing demonstrations", "River walks", "Cultural exchange"],
+  activities: ["Traditional fishing demonstrations", "Cultural exchange"],
   restaurants: [ { name: "Bardia Jungle Lodge Restaurant", cuisine: "Nepali/International", priceRange: "$$" } ],
   localFoods: ["Ghonghi (snail curry)", "Tharu-style fish curry", "Dhikri"],
   travelTips: ["Combine with a Bardia National Park safari for a fuller district visit", "Ask permission before photographing fishing activities"],
@@ -3349,7 +3355,7 @@ export const destinations = [
     { name: "Simikot Bazaar", description: "A ridge-top trading street where Tibetan, Humli and Indian goods change hands, busiest during the pilgrimage season." },
     { name: "Guras Kund Rhododendron Forest", description: "A forest trail near town that turns crimson with blooming rhododendron in spring." }
   ],
-  activities: ["Pilgrimage trekking", "Trading town exploration", "Mountain flights photography", "Short forest walks"],
+  activities: ["Pilgrimage trekking", "Mountain flights photography"],
   restaurants: [{ name: "Simikot Karnali Kitchen", cuisine: "Nepali/Tibetan", priceRange: "$" }],
   localFoods: ["Buckwheat pancakes", "Dried mutton", "Salted butter tea"],
   travelTips: ["Access is by flight from Nepalgunj — flights fill up fast in Kailash season", "Carry a valid permit if continuing toward the Tibet border", "Book accommodation ahead during the May-September pilgrimage rush"],
@@ -3421,7 +3427,7 @@ export const destinations = [
     { name: "Jumla Apple Orchards", description: "Rows of terraced orchards that turn the valley pink with blossom in spring and red with fruit each autumn." },
     { name: "Chandannath Hilltop Temple", description: "A revered Shiva shrine overlooking Khalanga, the focus of Jumla's biggest annual fair." }
   ],
-  activities: ["Orchard visits", "Temple pilgrimage", "Local market browsing", "Valley walks"],
+  activities: ["Local market browsing", "Valley walks"],
   restaurants: [{ name: "Khalanga Bazaar Bhojanalaya", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Jumli apples and apple juice", "Marsi red rice", "Buckwheat rotis"],
   travelTips: ["Reachable by flight from Nepalgunj or Surkhet", "Visit in October for the apple harvest and Chandannath fair", "Carry warm clothing — nights are cold even in autumn"],
@@ -3517,7 +3523,7 @@ export const destinations = [
     { name: "Khalanga Hilltop Bazaar", description: "A steep hillside market town with sweeping views down to the Bheri valley." },
     { name: "Bheri Riverside Trail", description: "A descent trail through terraced fields ending at a broad, boulder-strewn stretch of the Bheri River." }
   ],
-  activities: ["Hilltop-to-river walking", "River-side relaxing", "Village market visits", "Photography"],
+  activities: ["Hilltop-to-river walking", "River-side relaxing", "Photography"],
   restaurants: [{ name: "Khalanga Bazaar Kitchen", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Dhindo with bhaeda meat", "Gundruk soup", "Local maize rotis"],
   travelTips: ["Roads from Surkhet can be rough in monsoon — check conditions ahead", "Riverside swimming is best avoided during monsoon high water", "Very few formal lodges — ask locally for homestays"],
@@ -3541,7 +3547,7 @@ export const destinations = [
     { name: "Rukumkot Ridge Viewpoint", description: "A ridge-top lookout with distant views toward the Dhaulagiri range on clear mornings." },
     { name: "Dhorpatan Reserve Approach Trail", description: "The eastern approach trail into Nepal's only hunting reserve, crossing high pasture and rhododendron forest." }
   ],
-  activities: ["Ridge trekking", "Wildlife-area approach hiking", "Magar village visits", "Photography"],
+  activities: ["Magar village visits", "Photography"],
   restaurants: [{ name: "Rukumkot Village Bhojanalaya", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Maize dhindo", "Local mountain lentils", "Wild honey"],
   travelTips: ["A permit is required to enter Dhorpatan Hunting Reserve itself", "Roads are seasonal — best accessed in dry months", "Hire a local guide familiar with the reserve boundary trails"],
@@ -3589,7 +3595,7 @@ export const destinations = [
     { name: "Shreenagar Hilltop Viewpoint", description: "A short forested climb ending in wide views over the Salyan valley and the Karnali Highway below." },
     { name: "Karnali Highway Scenic Stretch", description: "A winding highway section cutting through pine-covered hills, popular with road travelers for photo stops." }
   ],
-  activities: ["Short hill hiking", "Scenic highway driving", "Local market visits", "Photography"],
+  activities: ["Local market visits", "Photography"],
   restaurants: [{ name: "Shreenagar Highway Bhatti", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Dhindo with local greens", "Maize rotis", "Mountain lentil soup"],
   travelTips: ["A convenient stop when driving the Karnali Highway between Surkhet and Dang", "Best light for photos is early morning", "Limited accommodation — most visitors pass through in a day"],
@@ -3603,8 +3609,8 @@ export const destinations = [
   description: "A short drive from central Birendranagar, Bulbule Lake sits in a landscaped park that has become the provincial capital's favorite weekend escape. Paddle boats drift across calm water framed by young forest, with the Chure hills rising in the near distance — a low-key but genuinely pleasant break from the surrounding rugged Karnali terrain.",
   category: "Lake",
   tags: ["Lakes", "Nature", "Gateway", "Culture"],
-  heroImage: img(PHOTO.lake2, 1600),
-  gallery: gallery(PHOTO.lake2, PHOTO.nepalHills, PHOTO.forest1),
+  heroImage: img("1753129557585-1121b904bca4", 1600),
+  gallery: gallery("1753129557585-1121b904bca4"),
   coordinates: { lat: 28.5950, lng: 81.6100 },
   rating: 4.0, reviewCount: 96,
   bestTimeToVisit: ["Autumn", "Winter", "Spring"],
@@ -3613,7 +3619,7 @@ export const destinations = [
     { name: "Bulbule Lake Boating Park", description: "A landscaped lakeside park with paddle boats, walking paths and picnic lawns." },
     { name: "Lakeside Forest Trail", description: "A short shaded loop trail around the lake popular with morning walkers and joggers." }
   ],
-  activities: ["Paddle boating", "Lakeside walking", "Picnicking", "Photography"],
+  activities: ["Picnicking", "Photography"],
   restaurants: [{ name: "Bulbule Lakeview Restaurant", cuisine: "Nepali/Indian", priceRange: "$$" }],
   localFoods: ["Karnali-style thakali set", "Momo", "Local river fish"],
   travelTips: ["Easily reached by taxi from central Birendranagar", "Weekends can get busy with local visitors", "Combine with a Kakrebihar Temple visit the same day"],
@@ -3627,8 +3633,8 @@ export const destinations = [
   description: "Set on a wooded hillside outside Birendranagar, the Kakrebihar temple complex mixes weathered stone shrines with dense forest, drawing pilgrims from across the province especially during Shivaratri. Its quiet, moss-covered courtyards feel far older than the surrounding modern city, offering a glimpse of Surkhet's history before it became Karnali's capital.",
   category: "Religious",
   tags: ["Culture", "Heritage", "Religious", "Nature"],
-  heroImage: img(PHOTO.forest1, 1600),
-  gallery: gallery(PHOTO.forest1, PHOTO.nepalHills),
+  heroImage: img("1753155438861-97e8d0025742", 1600),
+  gallery: gallery("1753155438861-97e8d0025742"),
   coordinates: { lat: 28.6300, lng: 81.5900 },
   rating: 3.9, reviewCount: 58,
   bestTimeToVisit: ["Autumn", "Winter", "Spring"],
@@ -3637,7 +3643,7 @@ export const destinations = [
     { name: "Kakrebihar Main Shrine", description: "The central stone shrine complex, believed centuries old and still an active pilgrimage site." },
     { name: "Forest Approach Trail", description: "A shaded walking trail through mixed forest leading up to the temple grounds." }
   ],
-  activities: ["Temple pilgrimage", "Forest walking", "Photography", "Local festival visits"],
+  activities: ["Photography", "Local festival visits"],
   restaurants: [{ name: "Kakrebihar Roadside Bhojanalaya", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Prasad sweets", "Dhindo", "Local seasonal vegetables"],
   travelTips: ["Busiest during Shivaratri — visit on a weekday for a quieter experience", "Wear comfortable shoes for the forest approach", "Modest dress is appreciated at the shrine"],
@@ -3662,7 +3668,7 @@ export const destinations = [
     { name: "Badimalika Temple Courtyard", description: "A stone-walled shrine complex where pilgrims circle the pagoda amid fluttering prayer flags." },
     { name: "Ridge-top Panorama", description: "Clear-day views stretch across the Api Nampa massif and down into the Budhiganga valley." }
   ],
-  activities: ["Pilgrimage trekking", "Ridge camping", "Village homestays", "Photography"],
+  activities: ["Ridge camping", "Village homestays", "Photography"],
   restaurants: [{ name: "Martadi Bhojanalaya", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Dhindo", "Gundruk soup", "Local yak cheese"],
   travelTips: ["Carry warm layers even in autumn as the ridge is exposed and windy", "Basic teahouses only above Martadi, so stock supplies in town"],
@@ -3787,7 +3793,7 @@ export const destinations = [
     { name: "Old Mangalsen Bazaar", description: "A row of traditional stone-and-timber houses along the ridge's spine." },
     { name: "Mangalsen Viewpoint", description: "A short climb above town for panoramic views of the surrounding hills." }
   ],
-  activities: ["Heritage walking tour", "Local market browsing", "Sunset viewpoint visits", "Photography"],
+  activities: ["Heritage walking tour", "Photography"],
   restaurants: [{ name: "Achham Ghar Bhojanalaya", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Dhido with gundruk", "Ghee-roasted maize", "Local millet raksi"],
   travelTips: ["Roads can be rough in monsoon; check conditions before travel", "Ask locals for the old bazaar's historical landmarks"],
@@ -3812,7 +3818,7 @@ export const destinations = [
     { name: "Shaileshwari Temple Complex", description: "The main shrine and its surrounding courtyard, busiest during Dashain." },
     { name: "Dipayal Old Quarter", description: "Narrow lanes of older Doti-style houses near the administrative center." }
   ],
-  activities: ["Temple visits", "Riverside walks", "Heritage photography", "Local market visits"],
+  activities: ["Riverside walks", "Heritage photography", "Local market visits"],
   restaurants: [{ name: "Seti Riverside Bhojanalaya", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Bhatmas sadeko", "Doti-style dhido", "Seti river fish curry"],
   travelTips: ["Mornings are quieter for temple visits", "Combine with a Seti riverside walk for a full day out"],
@@ -3862,7 +3868,7 @@ export const destinations = [
     { name: "Barkaula Watchtower", description: "A raised platform overlooking the park's main grassland for swamp deer and rhino sightings." },
     { name: "Rani Tal Wetland", description: "A marshy lake within the park favored by migratory waterbirds." }
   ],
-  activities: ["Jeep safari", "Guided nature walks", "Birdwatching", "Machan (watchtower) wildlife viewing"],
+  activities: ["Jeep safari", "Guided nature walks", "Birdwatching"],
   restaurants: [{ name: "Shuklaphanta Safari Lodge Restaurant", cuisine: "Nepali & Continental", priceRange: "$$" }],
   localFoods: ["Terai-style fish curry", "Dhikri", "Ghongi (snail curry)"],
   travelTips: ["Book safaris through registered park operators only", "Dawn and dusk drives offer the best wildlife sightings"],
@@ -3912,7 +3918,7 @@ export const destinations = [
     { name: "Tribhumi Temple Ghats", description: "Riverside steps used for ritual bathing and evening aarti." },
     { name: "Sharda Barrage Viewpoint", description: "A vantage point overlooking the river barrage and border area." }
   ],
-  activities: ["Temple visits", "Evening aarti viewing", "Riverside walks", "Border-town sightseeing"],
+  activities: ["Evening aarti viewing", "Riverside walks", "Border-town sightseeing"],
   restaurants: [{ name: "Sharda Riverside Bhojanalaya", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Terai dal-bhat", "Sel roti", "Riverside fish fry"],
   travelTips: ["Evening aarti is the most atmospheric time to visit", "Carry ID as the area is near an international border"],
@@ -3937,7 +3943,7 @@ export const destinations = [
     { name: "Mahendranagar Central Bazaar", description: "A lively trading hub with goods crossing daily from India." },
     { name: "Sharda Riverbank Promenade", description: "A relaxed evening walking spot along the river's edge." }
   ],
-  activities: ["Bazaar exploration", "Riverside strolls", "Day trips to Shuklaphanta", "Local food tasting"],
+  activities: ["Day trips to Shuklaphanta", "Local food tasting"],
   restaurants: [{ name: "Mahendranagar Junction Restaurant", cuisine: "Nepali & Indian", priceRange: "$$" }],
   localFoods: ["Litti chokha", "Terai-style thali", "Sugarcane juice"],
   travelTips: ["Use Mahendranagar as a base for Shuklaphanta day trips", "Border crossing formalities apply if continuing into India"],
@@ -3962,7 +3968,7 @@ export const destinations = [
     { name: "Ugratara Temple Ridge", description: "A forested hilltop shrine popular with pilgrims and picnickers alike." },
     { name: "Amargadhi Fort Grounds", description: "The remains of an old hill fort with views over the town below." }
   ],
-  activities: ["Temple visits", "Fort exploration", "Forest walks", "Local market browsing"],
+  activities: ["Forest walks", "Local market browsing"],
   restaurants: [{ name: "Dadeldhura Oak Hill Cafe", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Ghee-roasted maize", "Local honey", "Hill-style dal bhat"],
   travelTips: ["Mornings are cool and pleasant for the fort walk", "Combine both sites in a single half-day outing"],
@@ -3987,7 +3993,7 @@ export const destinations = [
     { name: "Oak Forest Ridge Trail", description: "A shaded ridge path popular for cool-weather walks." },
     { name: "Dadeldhura Viewpoint", description: "A hilltop clearing with views toward the Mahakali hills." }
   ],
-  activities: ["Forest hiking", "Viewpoint visits", "Picnicking", "Photography"],
+  activities: ["Picnicking", "Photography"],
   restaurants: [{ name: "Dadeldhura Hill Kitchen", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Buckwheat pancakes", "Wild mushroom curry", "Local herbal tea"],
   travelTips: ["A good stopover between the Terai and Baitadi/Darchula routes", "Carry a light jacket even in summer evenings"],
@@ -4012,7 +4018,7 @@ export const destinations = [
     { name: "Pancheshwar Mahadev Shrine", description: "An ancient riverside temple marking the sacred confluence." },
     { name: "Mahakali Gorge Viewpoint", description: "A dramatic overlook where the two rivers visibly merge below." }
   ],
-  activities: ["Pilgrimage visits", "River-side rituals", "Gorge viewpoint hikes", "Photography"],
+  activities: ["River-side rituals", "Photography"],
   restaurants: [{ name: "Pancheshwar Riverside Bhojanalaya", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Riverside fish curry", "Hill-style dal bhat", "Local ghee sweets"],
   travelTips: ["Major festival days draw large crowds from both sides of the border", "Paths near the gorge can be slippery; wear sturdy footwear"],
@@ -4037,7 +4043,7 @@ export const destinations = [
     { name: "Mahakali Rafting Put-in", description: "A launch point for stretches of grade II-III whitewater along the border river." },
     { name: "Gorge-side Cliff Trail", description: "A scenic footpath tracing the upper edge of the Mahakali gorge." }
   ],
-  activities: ["River rafting", "Cliff-trail hiking", "Camping", "Photography"],
+  activities: ["Camping", "Photography"],
   restaurants: [{ name: "Baitadi Gorge View Cafe", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Grilled river fish", "Buckwheat rotis", "Local millet drinks"],
   travelTips: ["Only raft with an experienced, properly equipped operator", "Water levels and difficulty shift heavily with the season"],
@@ -4087,7 +4093,7 @@ export const destinations = [
     { name: "Kali River Valley Trail", description: "The upstream valley path following the tri-border river toward the high passes." },
     { name: "Tri-Junction Viewpoint", description: "A vantage point near where Nepal, India and China's borders converge." }
   ],
-  activities: ["Valley trekking", "Pilgrimage-route sightseeing", "Photography", "Village visits"],
+  activities: ["Pilgrimage-route sightseeing", "Photography", "Village visits"],
   restaurants: [{ name: "Kali Riverside Bhojanalaya", cuisine: "Nepali", priceRange: "$" }],
   localFoods: ["Buckwheat rotis", "Local mountain potatoes", "Butter tea"],
   travelTips: ["Border-area travel may require special permits, so check locally in advance", "Best undertaken with a knowledgeable local guide"],
@@ -10481,8 +10487,8 @@ export const attractions = [
   tagline: "Birendranagar's landscaped lakeside park",
   description: "A calm, tree-fringed lake just outside central Birendranagar, developed into a popular park with paddle boats and walking paths, and the go-to weekend escape for Surkhet residents.",
   history: "Developed as a municipal park and boating lake in recent decades, Bulbule has become a central recreational landmark as Surkhet grew into Karnali's provincial capital.",
-  heroImage: img(PHOTO.lake2, 1600),
-  gallery: gallery(PHOTO.lake2, PHOTO.nepalHills),
+  heroImage: img("1753129557585-1121b904bca4", 1600),
+  gallery: gallery("1753129557585-1121b904bca4"),
   coordinates: { lat: 28.5950, lng: 81.6100 },
   rating: 4.1, reviewCount: 112,
   openingHours: "6:00 AM - 7:00 PM daily",
@@ -10502,8 +10508,8 @@ export const attractions = [
   tagline: "A moss-covered stone shrine complex in the Surkhet forest",
   description: "Hidden among trees on a hillside outside Birendranagar, Kakrebihar's weathered stone shrines draw pilgrims across the year and reach their busiest during Shivaratri.",
   history: "Believed to be several centuries old, the temple complex predates Surkhet's modern development into Karnali's provincial capital and remains one of the district's most sacred sites.",
-  heroImage: img(PHOTO.forest1, 1600),
-  gallery: gallery(PHOTO.forest1, PHOTO.himalaya1),
+  heroImage: img("1753155438861-97e8d0025742", 1600),
+  gallery: gallery("1753155438861-97e8d0025742"),
   coordinates: { lat: 28.6300, lng: 81.5900 },
   rating: 4.0, reviewCount: 67,
   openingHours: "5:00 AM - 7:00 PM daily",
@@ -10523,8 +10529,8 @@ export const attractions = [
   tagline: "A broad, scenic riverside stop along the Karnali Highway",
   description: "Where the Karnali Highway crosses the river near Chhinchu, wide gravel banks and clear water make for a popular rest stop, with distant hill views in every direction.",
   history: "Chhinchu grew as a small highway settlement following the Karnali Highway's construction, becoming a common waypoint for travelers moving between Surkhet and neighboring districts.",
-  heroImage: img(PHOTO.nepalHills, 1600),
-  gallery: gallery(PHOTO.nepalHills, PHOTO.lake1),
+  heroImage: img("1684230715200-40f32e068bf2", 1600),
+  gallery: gallery("1684230715200-40f32e068bf2"),
   coordinates: { lat: 28.5500, lng: 81.7000 },
   rating: 3.8, reviewCount: 22,
   openingHours: "Open year-round, daylight hours",
@@ -10544,8 +10550,8 @@ export const attractions = [
   tagline: "A hillside lookout over Karnali's fast-growing capital",
   description: "A short climb above Birendranagar gives a full view over the provincial capital's spreading rooftops, the Bheri valley, and the forested hills that ring the city.",
   history: "As Birendranagar rapidly expanded after being named Karnali Province's capital, this hillside lookout became a popular evening spot for residents and visitors alike.",
-  heroImage: img(PHOTO.himalaya1, 1600),
-  gallery: gallery(PHOTO.himalaya1, PHOTO.nepalHills),
+  heroImage: img("1711553186815-8fbc95d02155", 1600),
+  gallery: gallery("1711553186815-8fbc95d02155"),
   coordinates: { lat: 28.6100, lng: 81.6300 },
   rating: 3.9, reviewCount: 41,
   openingHours: "Open daylight hours year-round",
@@ -11258,8 +11264,8 @@ export const attractions = [
   name: "Kakre Bihar", category: "Historical Sites",
   tagline: "Medieval stone temple ruins in the Surkhet valley",
   description: "An atmospheric complex of stone temple ruins dating to the medieval period, Kakre Bihar is one of Karnali province's more significant heritage sites, evidence that the Surkhet valley was a settled crossroads long before becoming a modern provincial capital.",
-  heroImage: img(PHOTO.square1, 1600),
-  gallery: [],
+  heroImage: img("1771259664184-0328a372b5fd", 1600),
+  gallery: gallery("1771259664184-0328a372b5fd"),
   coordinates: { lat: 28.6, lng: 81.6167 },
   rating: 4.0, reviewCount: 22,
   bestTimeToVisit: ["Autumn", "Winter", "Spring"],
