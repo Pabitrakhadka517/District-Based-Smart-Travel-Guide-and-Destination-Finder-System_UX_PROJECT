@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { DEFAULT_AVATAR } from "@/lib/cloudinary";
+import { DEFAULT_AVATAR, isDefaultAvatar } from "@/lib/cloudinary";
 
 function getInitials(name: string): string {
   return name
@@ -24,6 +24,7 @@ import { DestinationCard } from "@/components/cards/destination-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CloudinaryImage } from "@/components/shared/cloudinary-image";
 import { ImageUploader } from "@/components/dashboard/image-uploader";
+import { uploadService } from "@/services/uploadService";
 import { useAuth } from "@/store/auth-store";
 import {
   usePlans, useWishlistApi, useUpdateProfile,
@@ -76,6 +77,11 @@ export default function ProfilePage() {
     }
   };
 
+  const cancelEdit = () => {
+    uploadService.discardUnsavedImages([user?.avatar], [editAvatar]);
+    setEditing(false);
+  };
+
   if (!user) return null;
 
   const NAV: { id: Section; label: string; count: number; icon: React.ElementType }[] = [
@@ -93,7 +99,7 @@ export default function ProfilePage() {
           <div className="relative -mt-12 shrink-0">
             {(() => {
               const avatar = editing ? editAvatar : user.avatar;
-              const hasCustom = avatar?.url && avatar.url !== DEFAULT_AVATAR;
+              const hasCustom = avatar?.url && !isDefaultAvatar(avatar);
               return hasCustom ? (
                 <CloudinaryImage
                   image={avatar}
@@ -123,7 +129,7 @@ export default function ProfilePage() {
                   <div className="mt-1">
                     <ImageUploader
                       type="avatar"
-                      value={editAvatar?.url && editAvatar.url !== DEFAULT_AVATAR ? editAvatar : null}
+                      value={editAvatar?.url && !isDefaultAvatar(editAvatar) ? editAvatar : null}
                       onChange={(img) => setEditAvatar(img ?? { url: DEFAULT_AVATAR, publicId: null, alt: "" })}
                       alt={editName}
                       label=""
@@ -156,7 +162,7 @@ export default function ProfilePage() {
               <Button variant="accent" onClick={saveEdit} disabled={updateProfile.isPending}>
                 {updateProfile.isPending ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save
               </Button>
-              <Button variant="outline" onClick={() => setEditing(false)}><X size={16} /> Cancel</Button>
+              <Button variant="outline" onClick={cancelEdit}><X size={16} /> Cancel</Button>
             </div>
           ) : (
             <Button variant="outline" className="pb-1 self-end" onClick={startEdit}><Edit3 size={16} /> Edit</Button>

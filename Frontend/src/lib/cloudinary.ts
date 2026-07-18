@@ -20,6 +20,23 @@ export const FALLBACK_IMAGE = cloudinaryUrl("nepalyatra/placeholders/default-ima
 /** Shown whenever a user/author/reviewer avatar is missing. */
 export const DEFAULT_AVATAR = cloudinaryUrl("nepalyatra/placeholders/default-avatar");
 
+/** Matches the shared placeholder's publicId (see PLACEHOLDER.avatar in the
+ *  backend's cloudinary.service.ts) — the one stable identifier for "this is
+ *  the default avatar", unlike its `.url`. The backend's Cloudinary SDK bakes
+ *  a version segment and delivery query params into that URL (e.g.
+ *  `.../v1/nepalyatra/placeholders/default-avatar?_a=...`), which never
+ *  string-matches this file's hand-built `DEFAULT_AVATAR` constant even
+ *  though both point at the same asset — comparing `.url` against
+ *  `DEFAULT_AVATAR` silently never matches. Compare `publicId` instead. */
+export const DEFAULT_AVATAR_PUBLIC_ID = "nepalyatra/placeholders/default-avatar";
+
+/** True if `avatar` is "no custom avatar" — either the shared backend
+ *  placeholder (real publicId) or the client-side placeholder object used
+ *  when a user clears their avatar in a form before saving (publicId: null). */
+export function isDefaultAvatar(avatar: { publicId?: string | null } | null | undefined): boolean {
+  return !avatar?.publicId || avatar.publicId === DEFAULT_AVATAR_PUBLIC_ID;
+}
+
 /** Resolves an (possibly undefined) CloudinaryImage to a renderable URL. */
 export function getImageUrl(image: CloudinaryImage | null | undefined, fallback = FALLBACK_IMAGE): string {
   return image?.url?.trim() ? image.url : fallback;

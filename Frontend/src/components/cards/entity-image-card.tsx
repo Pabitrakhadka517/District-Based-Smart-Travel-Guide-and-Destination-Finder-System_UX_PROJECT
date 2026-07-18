@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Star, ArrowUpRight } from "lucide-react";
+import { Star, ArrowUpRight, CheckCircle2, PlusCircle } from "lucide-react";
 import type { CloudinaryImage as CloudinaryImageType } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { WishlistButton } from "@/components/shared/wishlist-button";
@@ -21,6 +21,11 @@ interface EntityImageCardProps {
   trending?: boolean;
   /** Content for the footer row below the tagline (tags+price, hours+fee, etc). */
   footer: ReactNode;
+  /** Trip Planner discovery mode: shows a bottom-right "Add to trip"/"Added"
+   *  toggle instead of navigating away, and highlights the card when selected.
+   *  Omitted everywhere else, so no existing card changes appearance/behavior. */
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 /**
@@ -35,9 +40,15 @@ interface EntityImageCardProps {
 export function EntityImageCard({
   href, wishlistId, image, name, tagline, rating, ratingSuffix,
   categoryLabel, categoryBadgeClassName, trending, footer,
+  selected, onToggleSelect,
 }: EntityImageCardProps) {
   return (
-    <div className="group relative overflow-hidden rounded-3xl border border-border/70 bg-white shadow-soft card-hover">
+    <div
+      className={cn(
+        "group relative overflow-hidden rounded-3xl border bg-white shadow-soft card-hover",
+        selected ? "border-success ring-2 ring-success/40" : "border-border/70"
+      )}
+    >
       <Link href={href} className="block">
         <div className="relative h-56 overflow-hidden">
           <CloudinaryImage image={image} alt={name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-[600ms] group-hover:scale-[1.07]" />
@@ -66,6 +77,20 @@ export function EntityImageCard({
           and breaks the accessibility tree. Absolutely positioned against this same
           card wrapper keeps it in the identical visual spot. */}
       <WishlistButton id={wishlistId} className="absolute right-3.5 top-3.5 z-10" />
+      {onToggleSelect && (
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleSelect(); }}
+          aria-label={selected ? `Remove ${name} from trip` : `Add ${name} to trip`}
+          aria-pressed={!!selected}
+          className={cn(
+            "absolute right-3.5 top-14 z-10 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shadow-soft backdrop-blur transition hover:scale-105",
+            selected ? "bg-success text-white" : "bg-white/90 text-brand-600"
+          )}
+        >
+          {selected ? <><CheckCircle2 size={14} /> Added</> : <><PlusCircle size={14} /> Add to trip</>}
+        </button>
+      )}
     </div>
   );
 }

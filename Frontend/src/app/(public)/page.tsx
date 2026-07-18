@@ -126,11 +126,14 @@ export default async function HomePage() {
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 3);
 
+  // getStats() throws on a failed/missing response (caught by the nearest
+  // error boundary), so every value here is a real number from the API —
+  // including a legitimate 0 — never a stand-in for "the call failed".
   const stats = [
-    { value: String(platformStats.districts || 77),          label: "Districts Covered", icon: MapPinned },
-    { value: `${platformStats.destinations || 0}+`,           label: "Destinations",      icon: Mountain  },
-    { value: formatUserCount(platformStats.users || 0),       label: "Travellers",        icon: Users     },
-    { value: platformStats.avgRating ? `${platformStats.avgRating}★` : "4.8★", label: "Avg. Rating", icon: Star },
+    { value: String(platformStats.districts),                 label: "Districts Covered", icon: MapPinned },
+    { value: `${platformStats.destinations}+`,                 label: "Destinations",      icon: Mountain  },
+    { value: formatUserCount(platformStats.users),             label: "Travellers",        icon: Users     },
+    { value: platformStats.avgRating > 0 ? `${platformStats.avgRating}★` : "New", label: "Avg. Rating", icon: Star },
   ];
 
   return (
