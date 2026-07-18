@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
 import { Review } from "../models/Review";
-import { Destination } from "../models/Destination";
 import { TripPlan } from "../models/TripPlan";
 import { User } from "../models/User";
 import { ok, fail, okPaginated } from "../utils/response";
@@ -9,6 +8,7 @@ import { genId, today } from "../utils/ids";
 import { qs, sanitizeGallery } from "../utils/sanitize";
 import { parsePagination } from "../utils/pagination";
 import { PLACEHOLDER } from "../services/cloudinary.service";
+import { recomputeDestinationRating } from "../services/rating.service";
 
 const VALID_STATUSES = ["approved", "pending", "rejected"] as const;
 
@@ -182,17 +182,3 @@ export const voteHelpful = asyncHandler(async (req: Request, res: Response) => {
   if (!existing) return fail(res, "Review not found", 404);
   ok(res, { helpful: existing.helpful });
 });
-
-// Uses aggregation instead of fetching full documents — O(n) → O(1) DB work
-async function recomputeDestinationRating(destinationId: string): Promise<void> {
-  const [result] = await Review.aggregate<{ avg: number; count: number }>([
-    { $match: { destinationId, status: "approved" } },
-    { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 } } }
-  ]);
-
-  if (!result) return; // No approved reviews — leave current rating intact
-  await Destination.updateOne(
-    { id: destinationId },
-    { rating: Math.round(result.avg * 10) / 10, reviewCount: result.count }
-  );
-}

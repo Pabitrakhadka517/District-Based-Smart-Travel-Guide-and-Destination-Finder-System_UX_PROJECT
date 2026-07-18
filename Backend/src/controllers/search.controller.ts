@@ -68,6 +68,7 @@ export const search = asyncHandler(async (req: Request, res: Response) => {
     attrFilter.$or = [{ name: r }, { tagline: r }, { description: r }];
   }
   if (districtId) attrFilter.districtId = districtId;
+  if (season)      attrFilter.bestTimeToVisit = season; // MongoDB matches array elements
   if (!isNaN(minRating) && minRating > 0) attrFilter.rating = { $gte: minRating };
   const shouldSearchAttractions =
     hasText || !!districtId || categories.length > 0 || minRating > 0 || !!season;
