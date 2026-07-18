@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, Plus, AlertTriangle, X, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Pencil, Trash2, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
@@ -96,58 +97,30 @@ export function AdminTable<T extends { id: string; name?: string }>({
   return (
     <>
       {/* Single-row delete confirmation */}
-      {pendingDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive">
-                <AlertTriangle size={20} />
-              </span>
-              <div>
-                <p className="font-semibold text-foreground">Delete item?</p>
-                <p className="text-sm text-muted-foreground">
-                  {pendingDelete.name
-                    ? <>Delete <strong>{pendingDelete.name}</strong>? This cannot be undone.</>
-                    : "This action cannot be undone."}
-                </p>
-              </div>
-            </div>
-            <div className="mt-5 flex justify-end gap-3">
-              <Button variant="outline" size="sm" onClick={() => setPendingDelete(null)}>
-                <X size={14} /> Cancel
-              </Button>
-              <Button size="sm" variant="destructive" onClick={() => handleSingleDelete(pendingDelete)}>
-                <Trash2 size={14} /> Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete item?"
+        description={
+          pendingDelete?.name
+            ? `Delete "${pendingDelete.name}"? This cannot be undone.`
+            : "This action cannot be undone."
+        }
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete && handleSingleDelete(pendingDelete)}
+      />
 
       {/* Bulk action confirmation */}
-      {pendingBulk && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive">
-                <AlertTriangle size={20} />
-              </span>
-              <div>
-                <p className="font-semibold text-foreground">Confirm action</p>
-                <p className="text-sm text-muted-foreground">{pendingBulk.action.confirmMessage}</p>
-              </div>
-            </div>
-            <div className="mt-5 flex justify-end gap-3">
-              <Button variant="outline" size="sm" onClick={() => setPendingBulk(null)}>
-                <X size={14} /> Cancel
-              </Button>
-              <Button size="sm" variant="destructive" onClick={confirmBulk}>
-                Confirm
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!pendingBulk}
+        title="Confirm action"
+        description={pendingBulk?.action.confirmMessage ?? ""}
+        confirmLabel="Confirm"
+        variant="danger"
+        onCancel={() => setPendingBulk(null)}
+        onConfirm={confirmBulk}
+      />
 
       <div className="rounded-2xl border border-border bg-white shadow-soft">
         {/* Header: title + search + add */}

@@ -7,6 +7,14 @@
   --foreground: #1E293B;
   --font-inter: "Inter", system-ui, -apple-system, sans-serif;
   --font-poppins: "Poppins", "Inter", system-ui, sans-serif;
+  /* This app has no working dark theme (the Settings "Dark" option only
+     toggles an unused `.dark` class — no Tailwind `dark:` variant exists
+     anywhere), so without this the browser falls back to the OS's dark
+     preference for native UI it controls (autofill, caret, and Windows'
+     hardware-keyboard text-prediction/IME composition color) — rendering
+     typed text white on our always-light input backgrounds until the
+     composition commits. Declaring the scheme explicitly stops that. */
+  color-scheme: light;
 }
 
 * { border-color: theme(colors.border.DEFAULT); }
@@ -18,6 +26,15 @@ body {
   color: var(--foreground);
   font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
+}
+
+/* color-scheme alone wasn't enough to stop the browser from rendering
+   in-progress (IME/text-suggestion composing) keystrokes in white on our
+   light inputs — force the actual text color so it can never go invisible,
+   regardless of what the OS/browser tries to apply natively. */
+input, textarea, select {
+  color: var(--foreground);
+  -webkit-text-fill-color: var(--foreground);
 }
 
 @layer components {
