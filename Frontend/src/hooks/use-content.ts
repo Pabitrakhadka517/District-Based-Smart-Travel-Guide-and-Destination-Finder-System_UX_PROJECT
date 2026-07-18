@@ -9,6 +9,7 @@ import { reviewService } from "@/services/reviewService";
 import { wishlistService } from "@/services/wishlistService";
 import { tripService } from "@/services/tripService";
 import { bookingService } from "@/services/bookingService";
+import { notificationService } from "@/services/notificationService";
 import { profileService } from "@/services/profileService";
 import { searchService } from "@/services/searchService";
 import { recommendationService } from "@/services/recommendationService";
@@ -16,7 +17,7 @@ import { useAuth } from "@/store/auth-store";
 import type {
   Destination, District, Review, Trek,
   Festival, GuideArticle, TripPlan, User, WeatherDay, TouristAttraction, ActivityEvent,
-  WeatherInsight, CloudinaryImage, TravelAlert, PackingChecklist, Booking,
+  WeatherInsight, CloudinaryImage, TravelAlert, PackingChecklist, Booking, Notification,
 } from "@/types";
 import type { PlatformStats } from "@/services/content";
 
@@ -307,6 +308,62 @@ export function useDeleteBooking() {
       qc.invalidateQueries({ queryKey: ["bookings"] });
       qc.invalidateQueries({ queryKey: ["plans"] });
     },
+  });
+}
+
+/* --------------------------- Notifications ------------------------------- */
+
+export function useNotifications() {
+  const { isLoggedIn } = useAuth();
+  return useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => notificationService.getAll(),
+    enabled: isLoggedIn(),
+    retry: false,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useMarkNotificationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => notificationService.markRead(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => notificationService.markAllRead(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+}
+
+// Admin-broadcast queue (pending bookings/reviews) — only ever mounted inside
+// the admin layout, which already implies an authenticated admin, so unlike
+// useNotifications this doesn't need an `enabled: isLoggedIn()` guard.
+export function useAdminNotifications() {
+  return useQuery({
+    queryKey: ["admin-notifications"],
+    queryFn: () => apiGet<{ items: Notification[]; unreadCount: number }>("/admin/notifications", true),
+    refetchInterval: 60_000,
+  });
+}
+
+export function useMarkAdminNotificationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiPatch<Notification>(`/admin/notifications/${id}/read`, {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-notifications"] }),
+  });
+}
+
+export function useMarkAllAdminNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiPatch<null>("/admin/notifications/read-all", {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-notifications"] }),
   });
 }
 

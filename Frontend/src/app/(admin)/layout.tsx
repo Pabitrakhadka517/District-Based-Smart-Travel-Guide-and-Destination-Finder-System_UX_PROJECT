@@ -2,13 +2,18 @@
 import Link from "next/link";
 import { LayoutDashboard, Map, Mountain, MessageSquare, Users, Landmark, Footprints, CalendarDays, BookOpen, AlertTriangle, ClipboardList, CalendarCheck } from "lucide-react";
 import { Sidebar } from "@/components/shared/sidebar";
-import { useAdminAnalytics } from "@/hooks/use-content";
+import { NotificationBell } from "@/components/shared/notification-bell";
+import { useAdminAnalytics, useAdminNotifications, useMarkAdminNotificationRead, useMarkAllAdminNotificationsRead } from "@/hooks/use-content";
 import { useAuth } from "@/store/auth-store";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { data } = useAdminAnalytics();
   const { user } = useAuth();
   const pending = data?.pendingReviews ?? 0;
+
+  const { data: notifData } = useAdminNotifications();
+  const markNotificationRead = useMarkAdminNotificationRead();
+  const markAllNotificationsRead = useMarkAllAdminNotificationsRead();
 
   const items = [
     { href: "/admin",              label: "Dashboard",    icon: LayoutDashboard },
@@ -42,6 +47,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {pending} pending review{pending !== 1 ? "s" : ""}
               </Link>
             )}
+
+            <NotificationBell
+              items={notifData?.items ?? []}
+              unreadCount={notifData?.unreadCount ?? 0}
+              onMarkRead={(id) => markNotificationRead.mutate(id)}
+              onMarkAllRead={() => markAllNotificationsRead.mutate()}
+            />
 
             <div className="flex items-center gap-2">
               <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand-600">

@@ -267,6 +267,16 @@ function OngoingTripCard({ trip, updatePlan, booking }: { trip: TripPlan; update
   const dayPct    = totalDays > 0 ? Math.min(100, Math.round((curDay / totalDays) * 100)) : 0;
   const burn      = budgetBurn(local);
 
+  // A trip can be marked "ongoing" as soon as its booking is confirmed, which
+  // can happen before its start date arrives — don't show fake day-1 progress
+  // for a trip that hasn't actually started yet.
+  const notStartedYet  = !!local.startDate && todayISO() < local.startDate;
+  const daysUntilStart = notStartedYet
+    ? Math.ceil((new Date(local.startDate).getTime() - new Date(todayISO()).getTime()) / 86_400_000)
+    : 0;
+  const displayDay  = notStartedYet ? 0 : curDay;
+  const displayPct  = notStartedYet ? 0 : dayPct;
+
   const acts       = allActivities(local);
   const visitedCt  = acts.filter((a) => a.visited).length;
   const remainingCt = acts.filter((a) => !a.visited && a.title.trim()).length;
@@ -332,17 +342,26 @@ function OngoingTripCard({ trip, updatePlan, booking }: { trip: TripPlan; update
         <div>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-semibold text-foreground">Trip progress</span>
-            <span className="text-xs font-medium text-accent">{dayPct}% complete</span>
+            <span className="text-xs font-medium text-accent">
+              {notStartedYet
+                ? `Starts in ${daysUntilStart} day${daysUntilStart !== 1 ? "s" : ""}`
+                : `${dayPct}% complete`}
+            </span>
           </div>
           <div className="h-3 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-accent to-success transition-all duration-700"
-              style={{ width: `${dayPct}%` }}
+              className={cn(
+                "h-full rounded-full transition-all duration-700",
+                notStartedYet ? "bg-muted-foreground/30" : "bg-gradient-to-r from-accent to-success"
+              )}
+              style={{ width: `${displayPct}%` }}
             />
           </div>
           <div className="mt-2 flex justify-between text-xs text-muted-foreground">
             <span>{fmtDay(local.startDate)}</span>
-            <span className="font-semibold text-accent">Day {curDay} of {totalDays}</span>
+            <span className="font-semibold text-accent">
+              {notStartedYet ? "Not started yet" : `Day ${curDay} of ${totalDays}`}
+            </span>
             <span>{fmtDay(local.endDate)}</span>
           </div>
         </div>
@@ -350,7 +369,7 @@ function OngoingTripCard({ trip, updatePlan, booking }: { trip: TripPlan; update
         {/* ── Live stats ── */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: "Current day",       value: `${curDay}/${totalDays}`, color: "text-accent",    icon: CalendarDays  },
+            { label: "Current day",       value: `${displayDay}/${totalDays}`, color: "text-accent",    icon: CalendarDays  },
             { label: "Days remaining",    value: String(remDays),           color: "text-brand-600", icon: Clock         },
             { label: "Activities visited",value: `${visitedCt}/${totalActs}`, color: "text-success", icon: CheckCircle2 },
             { label: "Yet to visit",      value: String(remainingCt),       color: "text-secondary", icon: Compass       },

@@ -56,7 +56,9 @@ export function AddToTripButton({
           />
           <div
             className={cn(
-              "absolute top-full z-20 mt-1.5 max-h-64 overflow-y-auto rounded-xl border border-border bg-white p-1.5 shadow-card",
+              // z-40 — above the destination page's sticky section nav (z-30),
+              // which otherwise renders on top of this dropdown and clips it.
+              "absolute top-full z-40 mt-1.5 max-h-64 overflow-y-auto rounded-xl border border-border bg-white p-1.5 shadow-card",
               fullWidth ? "left-0 right-0" : "left-0 min-w-[220px]"
             )}
           >
