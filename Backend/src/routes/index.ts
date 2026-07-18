@@ -23,6 +23,7 @@ import * as travelAlerts from "../controllers/travelAlerts.controller";
 import * as checklists   from "../controllers/packingChecklists.controller";
 import * as bookings     from "../controllers/booking.controller";
 import * as contact      from "../controllers/contact.controller";
+import * as newsletter   from "../controllers/newsletter.controller";
 
 const router = Router();
 
@@ -89,8 +90,9 @@ router.get("/recommendations",               requireAuth,   recs.getPersonalized
 router.get("/recommendations/similar/:slug", publicLimiter, recs.getSimilar);
 router.get("/recommendations/trending",      publicLimiter, recs.getTrending);
 
-// Unauthenticated write endpoint — kept as tight as the auth flows to resist spam/abuse.
-router.post("/contact", authLimiter, contact.submitContactMessage);
+// Unauthenticated write endpoints — kept as tight as the auth flows to resist spam/abuse.
+router.post("/contact",     authLimiter, contact.submitContactMessage);
+router.post("/newsletter",  authLimiter, newsletter.subscribe);
 
 /* -------------------------------- Auth ---------------------------------- */
 router.post("/auth/register",       authLimiter, auth.register);
@@ -180,6 +182,7 @@ router.delete("/admin/bookings/:id", requireAdmin, bookings.adminDeleteBooking);
 router.get("/users",               requireAdmin, users.listUsers);
 router.get("/users/:id",           requireAdmin, users.getUser);
 router.patch("/users/:id/role",    requireAdmin, users.updateUserRole);
+router.patch("/users/:id/status",  requireAdmin, users.updateUserStatus);
 router.delete("/users/:id",        requireAdmin, users.deleteUser);
 
 export default router;
