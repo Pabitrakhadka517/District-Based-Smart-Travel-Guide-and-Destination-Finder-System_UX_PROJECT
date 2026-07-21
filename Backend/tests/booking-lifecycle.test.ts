@@ -279,3 +279,59 @@ describe("booking status state machine", () => {
     expect(adminResurrect.status).toBe(409);
   });
 });
+
+describe("admin booking detail endpoint", () => {
+  it("returns the full booking with joined user and destination info to an admin", async () => {
+    const { token: travelerToken, userId } = await registerTraveler("detail-traveler@example.com");
+    const destinationId = await createDestination();
+    const { bookingId } = await createBookedTrip(travelerToken, destinationId);
+
+    const res = await request(app)
+      .get(`/api/admin/bookings/${bookingId}`)
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.booking.id).toBe(bookingId);
+    expect(res.body.data.booking.fullName).toBe("Test Traveler");
+
+    expect(res.body.data.user.id).toBe(userId);
+    expect(res.body.data.user.email).toBe("detail-traveler@example.com");
+    // Never leak sensitive auth internals
+    expect(res.body.data.user.password).toBeUndefined();
+    expect(res.body.data.user.refreshTokens).toBeUndefined();
+
+    expect(res.body.data.destination.id).toBe(destinationId);
+    expect(res.body.data.destination.name).toBe(destinationPayload.name);
+    // No District/City seed doc exists for "test-district"/"test-city" in this
+    // test environment — just assert the join key is present (null is valid).
+    expect(res.body.data.destination).toHaveProperty("district");
+    expect(res.body.data.destination).toHaveProperty("city");
+  });
+
+  it("rejects a non-admin user with 403", async () => {
+    const { token: travelerToken } = await registerTraveler("detail-nonadmin@example.com");
+    const destinationId = await createDestination();
+    const { bookingId } = await createBookedTrip(travelerToken, destinationId);
+
+    const res = await request(app)
+      .get(`/api/admin/bookings/${bookingId}`)
+      .set("Authorization", `Bearer ${travelerToken}`);
+    expect(res.status).toBe(403);
+  });
+
+  it("rejects an unauthenticated request with 401", async () => {
+    const { token: travelerToken } = await registerTraveler("detail-unauth@example.com");
+    const destinationId = await createDestination();
+    const { bookingId } = await createBookedTrip(travelerToken, destinationId);
+
+    const res = await request(app).get(`/api/admin/bookings/${bookingId}`);
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 404 for a booking id that doesn't exist", async () => {
+    const res = await request(app)
+      .get("/api/admin/bookings/bk_does_not_exist")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(res.status).toBe(404);
+  });
+});
