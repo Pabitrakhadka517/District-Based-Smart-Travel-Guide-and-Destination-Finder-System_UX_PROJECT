@@ -122,24 +122,9 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
   await audit(user.id, "register", req, { email: user.email });
 
-  const accessToken = signToken({ sub: user.id, role: "user" });
-  const { plain: rtPlain, hashed: rtHashed } = issueRefreshToken();
-
-  await User.updateOne(
-    { id: user.id },
-    {
-      refreshTokens: [{
-        token: rtHashed,
-        device: String(req.headers["user-agent"] ?? "unknown").slice(0, 200),
-        rememberMe: false,
-        createdAt: new Date()
-      }]
-    }
-  );
-
-  setRefreshCookie(res, rtPlain, false);
-  setAccessCookie(res, accessToken);
-  ok(res, { user: user.toJSON() }, 201);
+  // Registration only creates the account — no tokens/cookies are issued here.
+  // The user must explicitly log in afterward to establish a session.
+  ok(res, { message: "Registration successful. Please log in to continue.", user: user.toJSON() }, 201);
 });
 
 // POST /api/auth/login   { email, password, rememberMe? }
