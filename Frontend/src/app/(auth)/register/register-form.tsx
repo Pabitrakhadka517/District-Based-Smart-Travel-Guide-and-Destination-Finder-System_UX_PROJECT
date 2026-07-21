@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { apiPost } from "@/services/api-client";
-import { useAuth } from "@/store/auth-store";
+import { toast } from "@/store/toast-store";
 import type { User } from "@/types";
 
 /* ── Password scoring ─────────────────────────────────────────── */
@@ -51,8 +51,7 @@ type FormValues = z.infer<typeof schema>;
 
 /* ── Register form ────────────────────────────────────────────── */
 export function RegisterForm() {
-  const router      = useRouter();
-  const { setAuth } = useAuth();
+  const router = useRouter();
   const [apiError, setApiError] = useState<string | null>(null);
   const [showPw,   setShowPw]   = useState(false);
 
@@ -72,13 +71,13 @@ export function RegisterForm() {
   const onSubmit = async (data: FormValues) => {
     setApiError(null);
     try {
-      const { user } = await apiPost<{ user: User }>("/auth/register", {
+      await apiPost<{ user: User }>("/auth/register", {
         name:     data.name,
         email:    data.email,
         password: data.password,
       });
-      setAuth(user);
-      router.push("/dashboard");
+      toast.success("Registration successful. Please log in to continue.");
+      router.push("/login");
     } catch (err) {
       setApiError(err instanceof Error ? err.message : "Registration failed. Please try again.");
     }
