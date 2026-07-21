@@ -321,6 +321,20 @@ export interface Booking {
   medicalInfo: string;
   specialRequirements: string;
   createdAt: string;
+  updatedAt: string;
+}
+
+/** Response shape of GET /admin/bookings/:id — the booking joined with its
+ *  owning user and destination (+ district/city names) for the Admin Panel's
+ *  booking-details view. Either join can be null if the referenced doc was
+ *  since deleted, even though the booking itself always survives. */
+export interface BookingDetail {
+  booking: Booking;
+  user: User | null;
+  destination: (Destination & {
+    district: { id: string; name: string } | null;
+    city: { id: string; name: string } | null;
+  }) | null;
 }
 
 export interface Notification {
