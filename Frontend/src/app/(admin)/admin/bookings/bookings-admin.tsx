@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Check, X, Trash2, Ban, CheckCheck, Download } from "lucide-react";
+import { Check, X, Trash2, Ban, CheckCheck, Download, Eye } from "lucide-react";
 import { AdminTable, type Column } from "@/components/dashboard/admin-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Alert } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { apiGetPaginated, apiPatch, apiDelete } from "@/services/api-client";
 import { useDestinations } from "@/hooks/use-content";
+import { BookingDetailsModal } from "./booking-details-modal";
 import type { Booking } from "@/types";
 
 type StatusFilter = "all" | Booking["status"];
@@ -54,6 +55,7 @@ export function BookingsAdmin() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
   const { data: destinations = [] } = useDestinations();
   const nameById = useMemo(() => {
@@ -152,6 +154,14 @@ export function BookingsAdmin() {
       key: "id", label: "Review",
       render: (b) => (
         <div className="flex justify-end gap-1">
+          <button
+            onClick={() => setDetailsId(b.id)}
+            aria-label="View booking details"
+            title="View details"
+            className="grid h-8 w-8 place-items-center rounded-lg bg-brand-50 text-brand-600 transition hover:bg-brand-100"
+          >
+            <Eye size={14} />
+          </button>
           {b.status === "pending" && (
             <button
               onClick={() => setStatus(b.id, "confirmed")}
@@ -302,6 +312,8 @@ export function BookingsAdmin() {
             : "No bookings yet."
         }
       />
+
+      <BookingDetailsModal bookingId={detailsId} onClose={() => setDetailsId(null)} />
     </div>
   );
 }
