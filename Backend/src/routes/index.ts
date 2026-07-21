@@ -182,6 +182,7 @@ router.delete("/checklists/:id", requireAdmin, checklists.deletePackingChecklist
 router.get("/dashboard/activity",  requireAuth,  stats.getUserActivity);
 router.get("/admin/analytics",     requireAdmin, stats.getAdminAnalytics);
 router.get(   "/admin/bookings",     requireAdmin, bookings.adminListBookings);
+router.get(   "/admin/bookings/:id", requireAdmin, bookings.adminGetBookingDetail);
 router.patch( "/admin/bookings/:id", requireAdmin, bookings.adminUpdateBookingStatus);
 router.delete("/admin/bookings/:id", requireAdmin, bookings.adminDeleteBooking);
 

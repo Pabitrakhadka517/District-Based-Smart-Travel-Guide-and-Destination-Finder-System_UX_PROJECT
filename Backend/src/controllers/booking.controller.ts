@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import { Booking } from "../models/Booking";
 import { Destination } from "../models/Destination";
+import { District } from "../models/District";
+import { City } from "../models/City";
 import { TripPlan } from "../models/TripPlan";
 import { User } from "../models/User";
 import { ok, fail, okPaginated } from "../utils/response";
@@ -272,6 +274,40 @@ export const adminListBookings = asyncHandler(async (req: Request, res: Response
     Booking.countDocuments(filter)
   ]);
   okPaginated(res, bookings, total, page, limit);
+});
+
+// GET /api/admin/bookings/:id  (requireAdmin) → a single booking with the
+// full user account and destination (+ district/city) joined in, for the
+// Admin Panel's booking-details view. The list endpoint above intentionally
+// stays a lean array of raw booking docs — this is the "drill in" endpoint.
+export const adminGetBookingDetail = asyncHandler(async (req: Request, res: Response) => {
+  const booking = await Booking.findOne({ id: req.params.id }).lean();
+  if (!booking) return fail(res, "Booking not found", 404);
+
+  const [user, destination] = await Promise.all([
+    // User.findOne(...).lean() still honors each field's schema-level
+    // `select: false` (password, refreshTokens, etc.) — same as the existing
+    // GET /api/users/:id admin endpoint — so nothing sensitive leaks here.
+    User.findOne({ id: booking.userId }).lean(),
+    Destination.findOne({ id: booking.destinationId }).lean()
+  ]);
+
+  let district: { id: string; name: string } | null = null;
+  let city: { id: string; name: string } | null = null;
+  if (destination) {
+    const [districtDoc, cityDoc] = await Promise.all([
+      District.findOne({ id: destination.districtId }).select("id name").lean(),
+      City.findOne({ id: destination.cityId }).select("id name").lean()
+    ]);
+    district = districtDoc ? { id: districtDoc.id, name: districtDoc.name } : null;
+    city = cityDoc ? { id: cityDoc.id, name: cityDoc.name } : null;
+  }
+
+  ok(res, {
+    booking,
+    user: user ?? null,
+    destination: destination ? { ...destination, district, city } : null
+  });
 });
 
 // PATCH /api/admin/bookings/:id  { status }  (requireAdmin) — the only way a

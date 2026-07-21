@@ -18,7 +18,7 @@ function cookieHeader(res: request.Response): string {
 }
 
 describe("auth flow", () => {
-  it("registers a new user, setting an access-token cookie but never returning it in the body", async () => {
+  it("registers a new user without issuing any auth tokens or cookies", async () => {
     const res = await request(app).post("/api/auth/register").send(credentials);
 
     expect(res.status).toBe(201);
@@ -28,7 +28,8 @@ describe("auth flow", () => {
     expect(res.body.data.user.role).toBe("user");
     // Never leak the password hash to the client
     expect(res.body.data.user.password).toBeUndefined();
-    expect(cookieHeader(res)).toMatch(/nepalyatra_at=/);
+    // Registration must not auto-authenticate the user
+    expect(res.headers["set-cookie"]).toBeUndefined();
   });
 
   it("rejects a second registration with the same email", async () => {
