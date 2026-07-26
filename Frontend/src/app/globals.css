@@ -82,6 +82,18 @@ input, textarea, select {
     background-color: theme('colors.brand.600'); /* Everest Blue */
   }
 
+  /* Soft radial darkening centred on the hero's text column — keeps the
+     mountain scenery visible at the edges while giving the heading/paragraph
+     a calmer, higher-contrast area to sit on top of. */
+  .hero-vignette {
+    background-image: radial-gradient(
+      ellipse 65% 55% at 50% 46%,
+      rgba(11, 31, 45, 0.58) 0%,
+      rgba(11, 31, 45, 0.28) 50%,
+      rgba(11, 31, 45, 0) 78%
+    );
+  }
+
   /* Topographic contour motif (decorative) */
   .topo {
     background-image: radial-gradient(circle at 1px 1px, rgba(27,79,114,0.06) 1px, transparent 0);
