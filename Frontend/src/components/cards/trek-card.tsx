@@ -24,7 +24,7 @@ export function TrekCard({ trek: t, selected, onToggleSelect }: TrekCardProps) {
     >
       <Link href={`/treks/${t.slug}`} className="block">
         <div className="relative h-56 overflow-hidden">
-          <CloudinaryImage image={t.heroImage} alt={t.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-[600ms] group-hover:scale-[1.07]" />
+          <CloudinaryImage image={t.heroImage} alt={t.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-600 group-hover:scale-[1.07]" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
           <span className={`absolute left-3.5 top-3.5 rounded-full px-2.5 py-1 text-xs font-medium ${DIFFICULTY_STYLE[t.difficulty]}`}>{t.difficulty}</span>
           <div className="absolute bottom-3.5 left-3.5 flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-brand-600 shadow-soft">

@@ -9,7 +9,7 @@ export function DistrictCard({ district: d }: { district: District }) {
   return (
     <Link href={`/districts/${d.slug}`} className="group relative block overflow-hidden rounded-3xl shadow-soft card-hover">
       <div className="relative h-80">
-        <CloudinaryImage image={d.heroImage} alt={d.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-[600ms] group-hover:scale-[1.07]" />
+        <CloudinaryImage image={d.heroImage} alt={d.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-600 group-hover:scale-[1.07]" />
         <div className="absolute inset-0 bg-gradient-to-t from-brand-900/85 via-brand-900/25 to-transparent" />
       </div>
       <div className="absolute inset-x-0 bottom-0 p-6 text-white">

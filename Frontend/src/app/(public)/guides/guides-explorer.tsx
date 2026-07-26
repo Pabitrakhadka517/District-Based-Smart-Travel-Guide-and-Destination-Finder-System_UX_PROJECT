@@ -31,7 +31,7 @@ export function GuidesExplorer({ guides }: { guides: GuideArticle[] }) {
         <section className="section-tight">
           <Link href={`/guides/${featured.slug}`} className="group grid overflow-hidden rounded-3xl border border-border/70 bg-white shadow-soft md:grid-cols-2">
             <div className="relative h-64 md:h-auto">
-              <CloudinaryImage image={featured.cover} alt={featured.title} fill sizes="50vw" className="object-cover transition duration-[600ms] group-hover:scale-[1.05]" />
+              <CloudinaryImage image={featured.cover} alt={featured.title} fill sizes="50vw" className="object-cover transition duration-600 group-hover:scale-[1.05]" />
             </div>
             <div className="flex flex-col justify-center p-8">
               <Badge variant="accent" className="w-fit bg-accent/10">{featured.category}</Badge>
@@ -69,7 +69,7 @@ export function GuidesExplorer({ guides }: { guides: GuideArticle[] }) {
             {list.map((g) => (
               <Link key={g.id} href={`/guides/${g.slug}`} className="group overflow-hidden rounded-3xl border border-border/70 bg-white shadow-soft card-hover">
                 <div className="relative h-48 overflow-hidden">
-                  <CloudinaryImage image={g.cover} alt={g.title} fill sizes="33vw" className="object-cover transition duration-[600ms] group-hover:scale-[1.07]" />
+                  <CloudinaryImage image={g.cover} alt={g.title} fill sizes="33vw" className="object-cover transition duration-600 group-hover:scale-[1.07]" />
                   <Badge className="absolute left-3 top-3 bg-white/95 text-brand-600">{g.category}</Badge>
                 </div>
                 <div className="p-5">

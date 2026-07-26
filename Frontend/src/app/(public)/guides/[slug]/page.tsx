@@ -56,7 +56,7 @@ export default async function GuideArticlePage({ params }: { params: Promise<{ s
           {more.map((m) => (
             <Link key={m.id} href={`/guides/${m.slug}`} className="group overflow-hidden rounded-3xl border border-border/70 bg-white shadow-soft card-hover">
               <div className="relative h-40 overflow-hidden">
-                <CloudinaryImage image={m.cover} alt={m.title} fill sizes="33vw" className="object-cover transition duration-[600ms] group-hover:scale-[1.07]" />
+                <CloudinaryImage image={m.cover} alt={m.title} fill sizes="33vw" className="object-cover transition duration-600 group-hover:scale-[1.07]" />
               </div>
               <div className="p-5">
                 <Badge variant="secondary">{m.category}</Badge>

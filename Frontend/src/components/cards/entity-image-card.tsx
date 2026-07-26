@@ -51,7 +51,7 @@ export function EntityImageCard({
     >
       <Link href={href} className="block">
         <div className="relative h-56 overflow-hidden">
-          <CloudinaryImage image={image} alt={name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-[600ms] group-hover:scale-[1.07]" />
+          <CloudinaryImage image={image} alt={name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-600 group-hover:scale-[1.07]" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/0 to-black/10" />
           <div className="absolute left-3.5 top-3.5 flex gap-2">
             <Badge className={cn("shadow-soft", categoryBadgeClassName)}>{categoryLabel}</Badge>

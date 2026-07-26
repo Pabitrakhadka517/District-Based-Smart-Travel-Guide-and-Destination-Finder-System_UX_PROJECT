@@ -43,7 +43,7 @@ export default async function FestivalsPage() {
             <Reveal key={f.id} delay={i * 0.05}>
               <Link href={`/festivals/${f.slug}`} className="group block overflow-hidden rounded-3xl border border-border/70 bg-white shadow-soft card-hover">
                 <div className="relative h-48 overflow-hidden">
-                  <CloudinaryImage image={f.image} alt={f.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-[600ms] group-hover:scale-[1.07]" />
+                  <CloudinaryImage image={f.image} alt={f.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-600 group-hover:scale-[1.07]" />
                   <Badge className="absolute left-3 top-3 bg-white/95 text-brand-600">{f.month}</Badge>
                   <Badge className={cn("absolute right-3 top-3", FESTIVAL_TYPE_SOLID[f.type] ?? FESTIVAL_TYPE_SOLID.Cultural)}>{f.type}</Badge>
                 </div>

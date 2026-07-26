@@ -460,7 +460,7 @@ function FestivalMiniCard({ festival: f }: { festival: Festival }) {
       className="group relative block overflow-hidden rounded-3xl border border-border/70 bg-white shadow-soft transition card-hover"
     >
       <div className="relative h-40 overflow-hidden">
-        <CloudinaryImage image={f.image} alt={f.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-[600ms] group-hover:scale-[1.07]" />
+        <CloudinaryImage image={f.image} alt={f.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-600 group-hover:scale-[1.07]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
         <span className={cn("absolute left-3 top-3 rounded-full border px-2.5 py-1 text-xs font-medium", FESTIVAL_TYPE_STYLE[f.type])}>{f.type}</span>
       </div>

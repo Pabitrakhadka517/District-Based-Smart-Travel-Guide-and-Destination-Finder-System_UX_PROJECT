@@ -62,6 +62,14 @@ input, textarea, select {
   .card-hover { @apply transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-card; }
   .surface { @apply rounded-3xl border border-border/70 bg-white shadow-soft; }
 
+  /* A bracket value like `duration-[600ms]` is ambiguous to Tailwind: both the
+     core transition-duration utility and tailwindcss-animate's animation-duration
+     utility register a `duration-*` arbitrary-value matcher, so the JIT can't
+     tell which one it's for. Defining a plain `.duration-600` class here (instead
+     of adding 600 to the transitionDuration theme scale, which the plugin mirrors
+     into animationDuration too) skips that matcher entirely. */
+  .duration-600 { transition-duration: 600ms; }
+
   /* Gradient mesh backgrounds for editorial sections */
   .mesh-light {
     background-color: #F8FAFC;
