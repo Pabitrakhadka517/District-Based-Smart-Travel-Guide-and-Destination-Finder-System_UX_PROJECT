@@ -62,7 +62,7 @@ function FestivalCard({ f }: { f: Festival }) {
         <CloudinaryImage
           image={f.image} alt={f.name} fill
           sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 25vw"
-          className="object-cover transition duration-[600ms] group-hover:scale-[1.06]"
+          className="object-cover transition duration-600 group-hover:scale-[1.06]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
         <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-medium backdrop-blur-sm ${FESTIVAL_TYPE_STYLE[f.type] ?? FESTIVAL_TYPE_STYLE.Cultural}`}>
@@ -533,7 +533,7 @@ export default async function HomePage() {
               <RevealItem key={g.id}>
                 <Link href={`/guides/${g.slug}`} className="group block overflow-hidden rounded-3xl border border-border/70 bg-white shadow-soft card-hover">
                   <div className="relative h-44 overflow-hidden">
-                    <CloudinaryImage image={g.cover} alt={g.title} fill sizes="33vw" className="object-cover transition duration-[600ms] group-hover:scale-[1.07]" />
+                    <CloudinaryImage image={g.cover} alt={g.title} fill sizes="33vw" className="object-cover transition duration-600 group-hover:scale-[1.07]" />
                     <Badge className="absolute left-3 top-3 bg-white/95 text-brand-600">{g.category}</Badge>
                   </div>
                   <div className="p-5">

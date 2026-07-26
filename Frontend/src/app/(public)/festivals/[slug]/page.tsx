@@ -101,7 +101,7 @@ export default async function FestivalDetail({ params }: { params: Promise<{ slu
               {others.map((o) => (
                 <Link key={o.id} href={`/festivals/${o.slug}`} className="group block overflow-hidden rounded-3xl border border-border/70 bg-white shadow-soft card-hover">
                   <div className="relative h-40 overflow-hidden">
-                    <CloudinaryImage image={o.image} alt={o.name} fill sizes="33vw" className="object-cover transition duration-[600ms] group-hover:scale-[1.07]" />
+                    <CloudinaryImage image={o.image} alt={o.name} fill sizes="33vw" className="object-cover transition duration-600 group-hover:scale-[1.07]" />
                     <Badge className={cn("absolute left-3 top-3", FESTIVAL_TYPE_SOLID[o.type] ?? FESTIVAL_TYPE_SOLID.Cultural)}>{o.type}</Badge>
                   </div>
                   <div className="p-4">
