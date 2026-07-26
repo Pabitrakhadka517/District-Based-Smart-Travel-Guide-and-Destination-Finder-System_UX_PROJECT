@@ -16,7 +16,6 @@ import { TrekCard } from "@/components/cards/trek-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { NewsletterForm } from "@/components/shared/newsletter-form";
-import { TopoLines } from "@/components/shared/topo-lines";
 import { CloudinaryImage } from "@/components/shared/cloudinary-image";
 import {
   getDistricts, getTrending, getFeatured, getFeaturedTreks,
@@ -144,11 +143,12 @@ export default async function HomePage() {
       ══════════════════════════════════════════════════════ */}
       <section className="relative min-h-[92vh] overflow-hidden">
         <Image
-          src={img(PHOTO.himalaya1, 1920)} alt="Himalayan landscape"
-          fill priority sizes="100vw" className="object-cover"
+          src={img(PHOTO.himalaya6, 1920)} alt="Himalayan landscape"
+          fill priority sizes="100vw"
+          className="object-cover object-[50%_25%] brightness-[0.92] contrast-[1.03] sm:object-[50%_32%] lg:object-[50%_40%]"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-brand-900/75 via-brand-900/40 to-brand-900/88" />
-        <TopoLines className="text-white/10" opacity={1} />
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-900/70 via-brand-900/38 to-brand-900/85" />
+        <div className="hero-vignette absolute inset-0" />
 
         <div className="container relative flex min-h-[92vh] flex-col items-center justify-center py-28 text-center text-white">
           <Reveal>
