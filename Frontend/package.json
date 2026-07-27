@@ -2,7 +2,7 @@
   "name": "nepalyatra",
   "version": "1.0.0",
   "private": true,
-  "description": "NepalYatra - District-Based Smart Travel Guide & Destination Finder Platform",
+  "description": "NepaYatra - District-Based Smart Travel Guide & Destination Finder Platform",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -23,9 +23,9 @@ const groups = [
     ]
   },
   {
-    title: "Using NepalYatra",
+    title: "Using NepaYatra",
     items: [
-      { q: "Is NepalYatra free to use?", a: "Yes. Browsing destinations, reading guides, saving a wishlist and planning trips are all free." },
+      { q: "Is NepaYatra free to use?", a: "Yes. Browsing destinations, reading guides, saving a wishlist and planning trips are all free." },
       { q: "Can I book hotels and transport here?", a: "The booking section is currently a preview that lets you explore options and pricing. Live booking integrations are on the roadmap." },
       { q: "How do I save destinations?", a: "Tap the heart icon on any destination card or guide page. Your wishlist is saved to your browser and synced to your dashboard." }
     ]

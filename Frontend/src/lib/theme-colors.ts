@@ -1,5 +1,5 @@
 /**
- * Single source of truth for NepalYatra's brand hex values.
+ * Single source of truth for NepaYatra's brand hex values.
  * Consumed by tailwind.config.ts (Tailwind classes) and by components that
  * can't use Tailwind classes (inline SVG fills/gradients).
  */

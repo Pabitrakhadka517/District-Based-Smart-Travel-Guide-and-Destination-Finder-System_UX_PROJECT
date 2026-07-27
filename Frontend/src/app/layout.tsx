@@ -19,11 +19,11 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: { default: "NepalYatra — Smart Travel Guide to Nepal", template: "%s · NepalYatra" },
+  title: { default: "NepaYatra — Smart Travel Guide to Nepal", template: "%s · NepaYatra" },
   description:
     "Explore Nepal by district, city and destination. Travel guides, trip planning, weather and reviews — your complete Himalayan travel companion.",
   keywords: ["Nepal travel", "Kathmandu", "Pokhara", "Everest", "trekking", "travel guide"],
-  openGraph: { title: "NepalYatra", description: "Your smart guide to Nepal.", type: "website" },
+  openGraph: { title: "NepaYatra", description: "Your smart guide to Nepal.", type: "website" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,6 +1,6 @@
 import type { Category, AttractionCategory, Difficulty } from "@/types";
 
-/** The 9 canonical tourism categories from the NepalYatra brand palette. */
+/** The 9 canonical tourism categories from the NepaYatra brand palette. */
 export type CanonicalCategory =
   | "Adventure" | "Nature" | "Religious" | "Heritage" | "Wildlife"
   | "Lakes" | "Trekking" | "Cultural" | "Festivals";
