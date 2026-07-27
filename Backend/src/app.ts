@@ -50,7 +50,7 @@ export function createApp(): Express {
   });
 
   const swaggerUiOptions = {
-    customSiteTitle: "NepalYatra API Docs",
+    customSiteTitle: "NepaYatra API Docs",
     customCss: ".swagger-ui .topbar { background-color: #1a365d; }",
     swaggerOptions: {
       persistAuthorization: true,

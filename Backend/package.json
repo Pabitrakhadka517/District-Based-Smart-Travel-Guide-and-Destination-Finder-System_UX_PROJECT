@@ -2,7 +2,7 @@
   "name": "nepayatra-api",
   "version": "1.0.0",
   "private": true,
-  "description": "NepalYatra backend API — Node.js, Express & MongoDB. Serves every endpoint the NepalYatra Next.js frontend consumes.",
+  "description": "NepaYatra backend API — Node.js, Express & MongoDB. Serves every endpoint the NepaYatra Next.js frontend consumes.",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

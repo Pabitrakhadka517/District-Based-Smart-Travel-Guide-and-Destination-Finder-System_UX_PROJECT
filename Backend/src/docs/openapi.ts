@@ -112,12 +112,12 @@ export const openapiSpec = {
 
   // ── Info ──────────────────────────────────────────────────────────────────
   info: {
-    title: "NepalYatra API",
+    title: "NepaYatra API",
     version: "1.0.0",
     description: [
-      "## NepalYatra — District-Based Smart Travel Guide API",
+      "## NepaYatra — District-Based Smart Travel Guide API",
       "",
-      "Complete REST API for the NepalYatra travel platform.",
+      "Complete REST API for the NepaYatra travel platform.",
       "",
       "### Response envelopes",
       "Every endpoint returns `{ success: boolean, data: T }`. On error the shape is `{ success: false, error: string }` — there is no separate field-level validation error shape; every 400/401/403/404/409 uses this same `error` string.",
@@ -140,7 +140,7 @@ export const openapiSpec = {
       "| Admin | Bearer token with `role: admin` |"
     ].join("\n"),
     contact: {
-      name: "NepalYatra Dev Team",
+      name: "NepaYatra Dev Team",
       email: "dev@nepalyatra.com",
       url: "https://nepalyatra.com"
     },

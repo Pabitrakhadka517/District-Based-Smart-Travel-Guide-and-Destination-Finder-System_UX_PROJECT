@@ -48,7 +48,7 @@ const emailHtml = (title: string, body: string, buttonText: string, buttonUrl: s
     </p>
     <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
     <p style="color:#bbb;font-size:12px;margin:0">
-      You're receiving this email because you registered at NepalYatra.
+      You're receiving this email because you registered at NepaYatra.
     </p>
   </div>
 </body>
@@ -94,10 +94,10 @@ export async function sendPasswordResetEmail(to: string, name: string, token: st
   const url = `${env.frontendUrl}/reset-password?token=${token}`;
   await send(
     to,
-    "Reset your NepalYatra password",
+    "Reset your NepaYatra password",
     emailHtml(
       `Reset your password, ${name}`,
-      "We received a request to reset your NepalYatra password. Click the button below to choose a new password. This link expires in <strong>30 minutes</strong>.<br><br>If you didn't request this, you can safely ignore this email.",
+      "We received a request to reset your NepaYatra password. Click the button below to choose a new password. This link expires in <strong>30 minutes</strong>.<br><br>If you didn't request this, you can safely ignore this email.",
       "Reset Password",
       url
     )

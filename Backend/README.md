@@ -1,6 +1,6 @@
-# NepalYatra API
+# NepaYatra API
 
-Node.js + Express + MongoDB (Mongoose) backend for the **NepalYatra** Next.js frontend.
+Node.js + Express + MongoDB (Mongoose) backend for the **NepaYatra** Next.js frontend.
 Written in TypeScript. Every endpoint returns a `{ success, data }` envelope (errors:
 `{ success: false, error }`) so it is a drop-in backend for the frontend's
 `apiGet` / `apiPost` client.

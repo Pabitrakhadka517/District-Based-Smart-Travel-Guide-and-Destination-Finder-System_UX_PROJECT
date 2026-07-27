@@ -5148,7 +5148,7 @@ export const guides = [
 // Demo accounts. Passwords are plain here and hashed by the seed script.
 export const users = [
   { id: "u1", name: "Aarav Shrestha", email: "aarav@example.com", password: "password123", avatar: AV(68), role: "user", joinedAt: "2025-09-01" },
-  { id: "u2", name: "NepalYatra Admin", email: "admin@nepayatra.com", password: "admin12345", avatar: AV(50), role: "admin", joinedAt: "2025-01-01" }
+  { id: "u2", name: "NepaYatra Admin", email: "admin@nepayatra.com", password: "admin12345", avatar: AV(50), role: "admin", joinedAt: "2025-01-01" }
 ];
 
 export const trips = [
