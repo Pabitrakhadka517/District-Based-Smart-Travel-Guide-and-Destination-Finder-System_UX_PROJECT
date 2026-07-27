@@ -6,7 +6,7 @@ async function start(): Promise<void> {
   await connectDB();
   const app = createApp();
   const server = app.listen(env.port, () => {
-    console.log(`[server] NepalYatra API listening on http://localhost:${env.port}`);
+    console.log(`[server] NepaYatra API listening on http://localhost:${env.port}`);
     console.log(`[server] Swagger UI:  http://localhost:${env.port}/api-docs`);
     console.log(`[server] API base:    http://localhost:${env.port}/api`);
   });
