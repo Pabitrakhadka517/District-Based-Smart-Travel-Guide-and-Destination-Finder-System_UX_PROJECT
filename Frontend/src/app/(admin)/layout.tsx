@@ -35,7 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <Sidebar items={items} title="Admin Panel" />
       <div className="flex-1 overflow-x-hidden">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white/80 px-6 backdrop-blur">
-          <span className="font-display font-semibold text-brand-600">NepalYatra Admin</span>
+          <span className="font-display font-semibold text-brand-600">NepaYatra Admin</span>
 
           <div className="flex items-center gap-3">
             {pending > 0 && (

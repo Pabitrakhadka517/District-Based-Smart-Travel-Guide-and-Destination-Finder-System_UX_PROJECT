@@ -233,7 +233,7 @@ export function SettingsClient() {
           {tab === "theme" && (
             <div role="tabpanel" id="tabpanel-theme" aria-labelledby="tab-theme">
               <h2 className="font-display font-semibold text-brand-600">Appearance</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Choose how NepalYatra looks for you.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Choose how NepaYatra looks for you.</p>
               <div className="mt-4 grid grid-cols-3 gap-3">
                 {THEMES.map(({ id, label, icon: Icon }) => {
                   const selected = theme === id;

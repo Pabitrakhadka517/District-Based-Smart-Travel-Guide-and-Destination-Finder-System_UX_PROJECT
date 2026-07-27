@@ -1,6 +1,6 @@
-# 🏔️ NepalYatra — District-Based Smart Travel Guide & Destination Finder
+# 🏔️ NepaYatra — District-Based Smart Travel Guide & Destination Finder
 
-A production-ready Nepal tourism platform built with **Next.js 15 (App Router)**, **TypeScript**, **Tailwind CSS**, **Framer Motion**, **Zustand** and **TanStack Query**. NepalYatra lets travellers explore Nepal through a clean hierarchy — **District → City → Destination** — with travel guides, trip planning, wishlists, reviews, weather, an interactive map, a user dashboard and a full admin panel.
+A production-ready Nepal tourism platform built with **Next.js 15 (App Router)**, **TypeScript**, **Tailwind CSS**, **Framer Motion**, **Zustand** and **TanStack Query**. NepaYatra lets travellers explore Nepal through a clean hierarchy — **District → City → Destination** — with travel guides, trip planning, wishlists, reviews, weather, an interactive map, a user dashboard and a full admin panel.
 
 > Design inspired by Airbnb, Google Travel, Booking.com and TripAdvisor — premium, spacious and investor-ready.
 

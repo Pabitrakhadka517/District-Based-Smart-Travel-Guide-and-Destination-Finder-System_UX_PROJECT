@@ -465,7 +465,7 @@ export default async function HomePage() {
               light
               eyebrow="Loved by travellers"
               title="What our community says"
-              subtitle="Real reviews from verified travellers who've explored Nepal with NepalYatra."
+              subtitle="Real reviews from verified travellers who've explored Nepal with NepaYatra."
             />
             <RevealList className="grid gap-6 md:grid-cols-3">
               {testimonials.map((r) => (

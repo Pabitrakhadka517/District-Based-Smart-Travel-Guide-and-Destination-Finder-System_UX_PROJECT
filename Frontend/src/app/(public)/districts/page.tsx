@@ -4,7 +4,7 @@ import { getDistricts } from "@/services/content";
 import { DistrictsList } from "./districts-list";
 
 export const metadata: Metadata = {
-  title: "Explore Nepal's 77 Districts – NepalYatra",
+  title: "Explore Nepal's 77 Districts – NepaYatra",
   description:
     "Discover Nepal's 77 unique districts — from Himalayan peaks to tropical lowlands. Browse by province, attraction type and traveller rating.",
 };

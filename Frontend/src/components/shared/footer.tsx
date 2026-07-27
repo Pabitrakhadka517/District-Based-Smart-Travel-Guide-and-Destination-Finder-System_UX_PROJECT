@@ -13,10 +13,10 @@ const cols = [
 ];
 
 const socials = [
-  { Icon: Facebook,  label: "Follow NepalYatra on Facebook",  href: "#" },
-  { Icon: Instagram, label: "Follow NepalYatra on Instagram", href: "#" },
-  { Icon: Twitter,   label: "Follow NepalYatra on Twitter",   href: "#" },
-  { Icon: Youtube,   label: "Watch NepalYatra on YouTube",    href: "#" },
+  { Icon: Facebook,  label: "Follow NepaYatra on Facebook",  href: "#" },
+  { Icon: Instagram, label: "Follow NepaYatra on Instagram", href: "#" },
+  { Icon: Twitter,   label: "Follow NepaYatra on Twitter",   href: "#" },
+  { Icon: Youtube,   label: "Watch NepaYatra on YouTube",    href: "#" },
 ];
 
 export function Footer() {
@@ -70,7 +70,7 @@ export function Footer() {
 
       <div className="border-t border-white/10">
         <div className="container flex flex-col items-center justify-between gap-3 py-6 text-xs text-slate-300 md:flex-row">
-          <p>© {new Date().getFullYear()} NepalYatra. Crafted for the Himalayas.</p>
+          <p>© {new Date().getFullYear()} NepaYatra. Crafted for the Himalayas.</p>
           <div className="flex items-center gap-5">
             <span className="flex items-center gap-1.5"><MapPin size={13} aria-hidden="true" /> Kathmandu, Nepal</span>
             <a href="mailto:hello@nepayatra.com" className="flex items-center gap-1.5 text-white transition-colors duration-200 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded">

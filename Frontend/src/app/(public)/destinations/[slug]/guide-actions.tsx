@@ -33,7 +33,7 @@ export function GuideActions({ id, dark = false }: Props) {
   const share = () => {
     if (typeof navigator === "undefined") return;
     if (navigator.share) {
-      navigator.share({ title: "NepalYatra", url: window.location.href }).catch(() => {});
+      navigator.share({ title: "NepaYatra", url: window.location.href }).catch(() => {});
     } else {
       navigator.clipboard?.writeText(window.location.href).then(() => {
         setCopied(true);

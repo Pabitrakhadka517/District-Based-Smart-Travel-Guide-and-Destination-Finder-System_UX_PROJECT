@@ -20,7 +20,7 @@ export function SearchBar({
   return (
     <form
       role="search"
-      aria-label="Search NepalYatra"
+      aria-label="Search NepaYatra"
       onSubmit={(e) => {
         e.preventDefault();
         router.push(`/search?q=${encodeURIComponent(q)}`);
